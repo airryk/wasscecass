@@ -316,7 +316,7 @@ def main():
                 
                 # Preview student data
                 st.subheader("Preview of Student Data")
-                st.dataframe(df.head())
+                st.dataframe(df.head()) 
                 
                 # Show information about the generated file
                 st.success(f"Excel file generated with all {num_students} students on a single sheet.")
