@@ -248,7 +248,9 @@ def get_download_link(wb, filename):
 
 def main():
     st.set_page_config(page_title="Student Score Generator", layout="wide")
-    
+    run_app()
+
+def run_app():
     st.title("Student Score Generator")
     st.write("Generate random scores for students across different years")
     
