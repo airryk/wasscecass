@@ -250,6 +250,116 @@ def analyze_subjects(df):
                 "Percentage": other_subject_percentages.astype(str) + "%"
             })
             st.dataframe(combo_table)
+            
+            # Add student search and view functionality
+            st.subheader("View Students Taking Specific Subject Combinations")
+            
+            # Let user select a second subject to find students taking both
+            second_subject = st.selectbox(
+                f"Select another subject to find students taking both {selected_subject} and this subject:",
+                ["Any subject"] + [s for s in subjects if s != selected_subject]
+            )
+            
+            # Filter students based on selection
+            if second_subject == "Any subject":
+                students_with_combo = subject_takers
+                combo_description = f"taking {selected_subject}"
+            else:
+                students_with_combo = subject_takers[subject_takers[f"Takes_{second_subject}"] == 1]
+                combo_description = f"taking both {selected_subject} and {second_subject}"
+            
+            # Display count of students with this combination
+            st.write(f"Found {len(students_with_combo)} students {combo_description}")
+            
+            # Add search functionality
+            search_term = st.text_input("Search students by name or student code:")
+            
+            if search_term:
+                # Search in Full Name and Student Code columns
+                search_results = students_with_combo[
+                    students_with_combo["Full Name"].str.contains(search_term, case=False, na=False) |
+                    students_with_combo["Student Code"].str.contains(search_term, case=False, na=False)
+                ]
+                
+                if len(search_results) > 0:
+                    st.write(f"Found {len(search_results)} matching students:")
+                    st.dataframe(search_results[["Student Code", "Full Name", "Gender", "Programme"]])
+                else:
+                    st.info(f"No students found matching '{search_term}'")
+            else:
+                # Show all students with pagination
+                students_per_page = st.slider("Students per page:", 5, 50, 10)
+                total_pages = max(1, (len(students_with_combo) + students_per_page - 1) // students_per_page)
+                
+                if total_pages > 1:
+                    page_number = st.number_input("Page:", min_value=1, max_value=total_pages, value=1)
+                    start_idx = (page_number - 1) * students_per_page
+                    end_idx = min(start_idx + students_per_page, len(students_with_combo))
+                    
+                    st.write(f"Showing students {start_idx+1}-{end_idx} of {len(students_with_combo)}")
+                    st.dataframe(students_with_combo.iloc[start_idx:end_idx][["Student Code", "Full Name", "Gender", "Programme"]])
+                    
+                    st.write(f"Page {page_number} of {total_pages}")
+                else:
+                    st.dataframe(students_with_combo[["Student Code", "Full Name", "Gender", "Programme"]])
+            
+            # Option to view detailed student information
+            st.subheader("View Detailed Student Information")
+            st.write("Select a student to view all their information:")
+            
+            # Create a selectbox with student names and codes for easy identification
+            student_options = ["Select a student..."] + [
+                f"{row['Student Code']} - {row['Full Name']}" 
+                for _, row in students_with_combo.iterrows()
+            ]
+            
+            selected_student_option = st.selectbox("Select a student:", student_options)
+            
+            if selected_student_option != "Select a student...":
+                # Extract student code from the selection
+                selected_student_code = selected_student_option.split(" - ")[0].strip()
+                
+                # Convert both to strings and strip whitespace for comparison
+                matching_students = students_with_combo[
+                    students_with_combo["Student Code"].astype(str).str.strip() == str(selected_student_code)
+                ]
+                
+                if len(matching_students) > 0:
+                    student_data = matching_students.iloc[0]
+                    
+                    # Display student information in a formatted way
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.write("**Personal Information:**")
+                        st.write(f"**Name:** {student_data['Full Name']}")
+                        st.write(f"**Student Code:** {student_data['Student Code']}")
+                        st.write(f"**Gender:** {student_data['Gender']}")
+                        st.write(f"**Date of Birth:** {student_data['Date of Birth']}")
+                        st.write(f"**Basic Index No.:** {student_data['Basic Index No.']}")
+                    
+                    with col2:
+                        st.write("**Academic Information:**")
+                        st.write(f"**Programme:** {student_data['Programme']}")
+                        
+                        # Get all subjects this student is taking
+                        student_subjects = []
+                        for col in subject_columns:
+                            if student_data[col] == 1:
+                                student_subjects.append(col.replace("Takes_", ""))
+                        
+                        st.write("**Elective Subjects:**")
+                        for subject in student_subjects:
+                            st.write(f"- {subject}")
+                    
+                    # Option to download this student's information
+                    student_df = pd.DataFrame([student_data])
+                    csv = student_df.to_csv(index=False)
+                    b64 = base64.b64encode(csv.encode()).decode()
+                    href = f'<a href="data:file/csv;base64,{b64}" download="{student_data["Student Code"]}_info.csv">Download Student Information</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+                else:
+                    st.error(f"No student found with code {selected_student_code}. This may be due to filtering applied to the data.")
         else:
             st.info(f"No students in the filtered dataset take {selected_subject}")
 
