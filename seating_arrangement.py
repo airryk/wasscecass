@@ -224,8 +224,8 @@ def run_app():
             st.header("Exam Configuration")
 
             if 'Core_Subjects' in df.columns and 'Elective_Subjects' in df.columns:
-                core_subjects = df['Core_Subjects'].str.split(',').explode().str.strip().unique()
-                elective_subjects = df['Elective_Subjects'].str.split(',').explode().str.strip().unique()
+                core_subjects = df['Core_Subjects'].str.split(',').explode().str.strip().astype(str).unique()
+                elective_subjects = df['Elective_Subjects'].str.split(',').explode().str.strip().astype(str).unique()
                 all_subjects = sorted(list(set(core_subjects) | set(elective_subjects)))
                 
                 selected_subjects = st.multiselect("Select subjects for this exam session", options=all_subjects)
