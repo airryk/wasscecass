@@ -125,7 +125,7 @@ def generate_arrangement(df, room_capacities, subject_details):
     arrangement_df = pd.DataFrame()
 
     for session in ['Morning', 'Afternoon']:
-        session_df = long_df[long_df['Session'] == session].sort_values('IndexNumber').reset_index(drop=True)
+        session_df = long_df[long_df['Session'] == session]
         
         if session_df.empty:
             continue
@@ -141,18 +141,30 @@ def generate_arrangement(df, room_capacities, subject_details):
             continue
 
         seating_arrangement = []
-        for i, student in session_df.iterrows():
-            seat = all_seats[i]
-            seating_arrangement.append({
-                'Date': student['Date'],
-                'Room': seat['Room'],
-                'Seat Number': seat['Seat Number'],
-                'Index Number': student['IndexNumber'],
-                'Full Name': student['Full_Name'],
-                'Class': student['Class'],
-                'Subject': student['Subject'],
-                'Session': student['Session']
-            })
+        seat_index = 0
+        
+        subjects_in_session = session_df['Subject'].unique()
+        for subject in subjects_in_session:
+            subject_df = session_df[session_df['Subject'] == subject].sort_values('IndexNumber')
+            for _, student in subject_df.iterrows():
+                if seat_index < len(all_seats):
+                    seat = all_seats[seat_index]
+                    seating_arrangement.append({
+                        'Date': student['Date'],
+                        'Room': seat['Room'],
+                        'Seat Number': seat['Seat Number'],
+                        'Index Number': student['IndexNumber'],
+                        'Full Name': student['Full_Name'],
+                        'Class': student['Class'],
+                        'Subject': student['Subject'],
+                        'Session': student['Session']
+                    })
+                    seat_index += 1
+                else:
+                    st.error(f"Not enough seats for all students in the {session} session.")
+                    break
+            if seat_index >= len(all_seats):
+                break
         
         arrangement_df = pd.concat([arrangement_df, pd.DataFrame(seating_arrangement)])
 
@@ -273,8 +285,10 @@ def run_app():
                         st.session_state.ordered_rooms.append(room)
 
                 st.write("Order of Rooms (Drag to reorder, top has higher priority):")
-                if st.session_state.ordered_rooms:
-                    st.session_state.ordered_rooms = sort_items(st.session_state.ordered_rooms, direction='vertical')
+                if 'ordered_rooms' in st.session_state and st.session_state.ordered_rooms:
+                    sorted_rooms = sort_items(st.session_state.ordered_rooms, direction='vertical')
+                    if sorted_rooms:
+                        st.session_state.ordered_rooms = sorted_rooms
             else:
                 st.error("The uploaded file must contain a 'Class' column.")
                 return
