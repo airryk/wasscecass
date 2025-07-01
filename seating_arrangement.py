@@ -122,33 +122,44 @@ def generate_arrangement(df, room_capacities, subject_details):
         afternoon_df['Session'] = 'Afternoon'
         long_df = pd.concat([long_df[long_df['Session'] != 'Both'], morning_df, afternoon_df]).reset_index(drop=True)
 
-    grouped_by_subject = long_df.sort_values('IndexNumber').reset_index(drop=True)
-    
-    all_seats = []
-    room_names = {room: f"Room {i+1} ({room})" for i, room in enumerate(room_capacities.keys())}
-    for room, capacity in room_capacities.items():
-        for seat_num in range(1, capacity + 1):
-            all_seats.append({'Room': room_names[room], 'Seat Number': seat_num})
+    arrangement_df = pd.DataFrame()
 
-    if len(grouped_by_subject) > len(all_seats):
-        st.error(f"Not enough seats for all students ({len(grouped_by_subject)} required, {len(all_seats)} available).")
+    for session in ['Morning', 'Afternoon']:
+        session_df = long_df[long_df['Session'] == session].sort_values('IndexNumber').reset_index(drop=True)
+        
+        if session_df.empty:
+            continue
+
+        all_seats = []
+        room_names = {room: f"Room {i+1} ({room})" for i, room in enumerate(room_capacities.keys())}
+        for room, capacity in room_capacities.items():
+            for seat_num in range(1, capacity + 1):
+                all_seats.append({'Room': room_names[room], 'Seat Number': seat_num})
+
+        if len(session_df) > len(all_seats):
+            st.error(f"Not enough seats for the {session} session ({len(session_df)} required, {len(all_seats)} available).")
+            continue
+
+        seating_arrangement = []
+        for i, student in session_df.iterrows():
+            seat = all_seats[i]
+            seating_arrangement.append({
+                'Date': student['Date'],
+                'Room': seat['Room'],
+                'Seat Number': seat['Seat Number'],
+                'Index Number': student['IndexNumber'],
+                'Full Name': student['Full_Name'],
+                'Class': student['Class'],
+                'Subject': student['Subject'],
+                'Session': student['Session']
+            })
+        
+        arrangement_df = pd.concat([arrangement_df, pd.DataFrame(seating_arrangement)])
+
+    if arrangement_df.empty:
+        st.warning("No seating arrangement could be generated.")
         return None
-
-    seating_arrangement = []
-    for i, student in grouped_by_subject.iterrows():
-        seat = all_seats[i]
-        seating_arrangement.append({
-            'Date': student['Date'],
-            'Room': seat['Room'],
-            'Seat Number': seat['Seat Number'],
-            'Index Number': student['IndexNumber'],
-            'Full Name': student['Full_Name'],
-            'Class': student['Class'],
-            'Subject': student['Subject'],
-            'Session': student['Session']
-        })
-
-    arrangement_df = pd.DataFrame(seating_arrangement)
+        
     arrangement_df['Date'] = pd.to_datetime(arrangement_df['Date']).dt.date
 
     wb = openpyxl.Workbook()
@@ -262,7 +273,8 @@ def run_app():
                         st.session_state.ordered_rooms.append(room)
 
                 st.write("Order of Rooms (Drag to reorder, top has higher priority):")
-                st.session_state.ordered_rooms = sort_items(st.session_state.ordered_rooms, direction='vertical')
+                if st.session_state.ordered_rooms:
+                    st.session_state.ordered_rooms = sort_items(st.session_state.ordered_rooms, direction='vertical')
             else:
                 st.error("The uploaded file must contain a 'Class' column.")
                 return
