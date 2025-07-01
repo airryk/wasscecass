@@ -28,26 +28,22 @@ def create_class_list_pdf(arrangement_df, exam_date):
         
         # Set table headers
         pdf.set_font('Arial', 'B', 10)
-        col_widths = [25, 30, 60, 30, 40] # Column widths
-        headers = ['Seat Number', 'Index Number', 'Full Name', 'Class', 'Signature']
+        col_widths = [20, 25, 50, 25, 30, 35] # Adjusted Column widths
+        headers = ['Seat Number', 'Index Number', 'Full Name', 'Class', 'Subject', 'Signature']
         for i, header in enumerate(headers):
             pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
         pdf.ln()
         
         # Add table rows
-        pdf.set_font('Arial', '', 9)
+        pdf.set_font('Arial', '', 8) # Smaller font
         room_df = arrangement_df[arrangement_df['Room'] == room].sort_values('Seat Number')
         for _, row in room_df.iterrows():
             pdf.cell(col_widths[0], 10, str(row['Seat Number']), 1)
             pdf.cell(col_widths[1], 10, str(row['Index Number']), 1)
-            # Use multi_cell for names to wrap if they are too long
-            x_before_name = pdf.get_x()
-            y_before_name = pdf.get_y()
-            pdf.multi_cell(col_widths[2], 10, str(row['Full Name']), 1, 'L')
-            # Reset position to the next cell
-            pdf.set_xy(x_before_name + col_widths[2], y_before_name)
+            pdf.cell(col_widths[2], 10, str(row['Full Name']), 1)
             pdf.cell(col_widths[3], 10, str(row['Class']), 1)
-            pdf.cell(col_widths[4], 10, '', 1) # Empty signature cell
+            pdf.cell(col_widths[4], 10, str(row['Subject']), 1)
+            pdf.cell(col_widths[5], 10, '', 1) # Empty signature cell
             pdf.ln()
             
     return pdf.output(dest='S')
