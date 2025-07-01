@@ -224,6 +224,8 @@ def add_room_callback():
     if new_room and new_room not in st.session_state.all_classes:
         st.session_state.all_classes.append(new_room)
         st.session_state.all_classes.sort()
+        if 'ordered_rooms' in st.session_state and new_room not in st.session_state.ordered_rooms:
+            st.session_state.ordered_rooms.append(new_room)
         # Clear the input box after adding by resetting its key in session_state
         st.session_state.new_room_input = ""
 
@@ -284,29 +286,48 @@ def run_app():
                     st.session_state.current_file = uploaded_file.name
                     all_classes = sorted(df['Class'].unique())
                     st.session_state.all_classes = all_classes
-                    st.session_state.selected_classes = all_classes.copy()
+                    st.session_state.ordered_rooms = all_classes.copy()
 
                 # Allow users to add a custom room using a callback
                 st.text_input("Add a new room (optional)", key="new_room_input")
                 st.button("Add Room", on_click=add_room_callback)
-                
-                # The multiselect's state is now managed by Streamlit using its key
-                selected_classes = st.multiselect(
-                    "Select classes to be used as exam rooms",
+
+                st.subheader("Manage and Order Rooms")
+
+                # Let user select which classes to use as rooms
+                selected_rooms_multiselect = st.multiselect(
+                    "Select classes to use as rooms",
                     options=st.session_state.all_classes,
-                    default=st.session_state.selected_classes,
-                    key="selected_classes_multiselect"
+                    default=st.session_state.ordered_rooms
                 )
-                # Update session state with the current selection from the widget
-                st.session_state.selected_classes = selected_classes
+                
+                # Update ordered_rooms based on selection, preserving order
+                st.session_state.ordered_rooms = [room for room in st.session_state.ordered_rooms if room in selected_rooms_multiselect]
+                for room in selected_rooms_multiselect:
+                    if room not in st.session_state.ordered_rooms:
+                        st.session_state.ordered_rooms.append(room)
+
+                # Display rooms with reordering buttons
+                st.write("Order of Rooms (Top has higher priority):")
+                for i, room_name in enumerate(st.session_state.ordered_rooms):
+                    cols = st.columns([0.6, 0.2, 0.2])
+                    cols[0].write(room_name)
+                    if cols[1].button("Up", key=f"up_{i}", use_container_width=True):
+                        if i > 0:
+                            st.session_state.ordered_rooms.insert(i - 1, st.session_state.ordered_rooms.pop(i))
+                            st.rerun()
+                    if cols[2].button("Down", key=f"down_{i}", use_container_width=True):
+                        if i < len(st.session_state.ordered_rooms) - 1:
+                            st.session_state.ordered_rooms.insert(i + 1, st.session_state.ordered_rooms.pop(i))
+                            st.rerun()
             else:
                 st.error("The uploaded file must contain a 'Class' column.")
                 return
 
             room_capacities = {}
-            if selected_classes:
+            if st.session_state.get('ordered_rooms'):
                 st.subheader("Set Room Capacities")
-                for room in selected_classes:
+                for room in st.session_state.ordered_rooms:
                     room_capacities[room] = st.number_input(
                         f"Capacity for {room}",
                         min_value=1,
@@ -315,7 +336,7 @@ def run_app():
                     )
 
             if st.button("Generate Seating Arrangement"):
-                if not selected_classes:
+                if not st.session_state.get('ordered_rooms'):
                     st.warning("Please select at least one class to be used as a room.")
                 elif not selected_subjects:
                     st.warning("Please select at least one subject for the session.")
