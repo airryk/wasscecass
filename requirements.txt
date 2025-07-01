@@ -4,3 +4,5 @@ openpyxl
 fpdf2
 matplotlib
 seaborn
+plotly
+altair
