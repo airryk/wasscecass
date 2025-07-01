@@ -5,6 +5,7 @@ from openpyxl.styles import Font, Alignment
 import io
 import base64
 from fpdf import FPDF
+from streamlit_sortables import sort_items
 
 def create_class_list_pdf(arrangement_df, exam_date):
     """Generates a PDF class list for signing."""
@@ -17,7 +18,7 @@ def create_class_list_pdf(arrangement_df, exam_date):
         
         # Set title
         pdf.set_font('Arial', 'B', 16)
-        title_text = f"Class List for {room}"
+        title_text = f"Exam List for {room}"
         pdf.cell(0, 10, title_text, 0, 1, 'C')
         
         exam_date_text = f"Exam Date: {exam_date.strftime('%A, %B %d, %Y')}"
@@ -307,19 +308,10 @@ def run_app():
                     if room not in st.session_state.ordered_rooms:
                         st.session_state.ordered_rooms.append(room)
 
-                # Display rooms with reordering buttons
-                st.write("Order of Rooms (Top has higher priority):")
-                for i, room_name in enumerate(st.session_state.ordered_rooms):
-                    cols = st.columns([0.6, 0.2, 0.2])
-                    cols[0].write(room_name)
-                    if cols[1].button("Up", key=f"up_{i}", use_container_width=True):
-                        if i > 0:
-                            st.session_state.ordered_rooms.insert(i - 1, st.session_state.ordered_rooms.pop(i))
-                            st.rerun()
-                    if cols[2].button("Down", key=f"down_{i}", use_container_width=True):
-                        if i < len(st.session_state.ordered_rooms) - 1:
-                            st.session_state.ordered_rooms.insert(i + 1, st.session_state.ordered_rooms.pop(i))
-                            st.rerun()
+                # Display rooms with drag-and-drop reordering
+                st.write("Order of Rooms (Drag to reorder, top has higher priority):")
+                sorted_rooms = sort_items(st.session_state.ordered_rooms, direction='vertical')
+                st.session_state.ordered_rooms = sorted_rooms
             else:
                 st.error("The uploaded file must contain a 'Class' column.")
                 return
@@ -359,12 +351,12 @@ def run_app():
 
                             # Class list PDF download link
                             class_list_pdf_bytes = create_class_list_pdf(arrangement_df, exam_date)
-                            class_list_pdf_filename = f"class_list_{exam_date.strftime('%Y-%m-%d')}.pdf"
+                            class_list_pdf_filename = f"exam_list_{exam_date.strftime('%Y-%m-%d')}.pdf"
                             class_list_pdf_link = get_pdf_download_link(class_list_pdf_bytes, class_list_pdf_filename)
 
                             st.markdown(excel_link, unsafe_allow_html=True)
                             st.markdown(pdf_link, unsafe_allow_html=True)
-                            st.markdown(class_list_pdf_link.replace("Download PDF file", "Download Class List PDF"), unsafe_allow_html=True)
+                            st.markdown(class_list_pdf_link.replace("Download PDF file", "Download Exam List PDF"), unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"An error occurred while processing the file: {e}")
