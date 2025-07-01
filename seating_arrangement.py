@@ -24,6 +24,7 @@ def create_pdf(arrangement_df, exam_date):
         pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
     pdf.ln()
     
+    
     # Add table rows
     pdf.set_font('Arial', '', 8)
     for _, row in arrangement_df.iterrows():
