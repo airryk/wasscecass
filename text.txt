@@ -1,0 +1,12 @@
+here in @/app.py  and @/index.py 
+let us add the ability to upload a file where we can create seating arrangement for an exams.
+in this, I should be able to specify the classes that will be used for the exams. also I should set the number of candidates room (classes). and I should also be able to arrange the classes (rooms) as in room 1, room 2 etc depending on the number of classes I will select for the rooms.
+
+and the arrangement of the exams will be based on subjects.
+I should be able to upload a file where it contains the classes with other data.
+the columns with data has the following colum names
+
+IndexNumber	Programme	Full_Name	Gender	Class	Elective_Subjects Core_Subjects
+
+and in the elective_subjects AND core_subjects  column, the subjects are separated by comma.
+

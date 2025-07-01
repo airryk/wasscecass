@@ -6,6 +6,7 @@ import streamlit as st
 # Import other modules after setting the page config
 import index
 import data_analyzer
+import seating_arrangement
 
 def main():
     st.title("WASSCE Student Data Tools")
@@ -14,13 +15,16 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio(
         "Select a tool:",
-        ["Student Score Generator", "Student Data Analyzer"]
+        ["Student Score Generator", "Student Data Analyzer", "Seating Arrangement"]
     )
     
     # Display the selected page
     if page == "Student Score Generator":
         # Run the score generator without its set_page_config
         index.run_app()
+    elif page == "Seating Arrangement":
+        # Run the seating arrangement tool
+        seating_arrangement.run_app()
     else:
         # Run the data analyzer without its set_page_config
         data_analyzer.run_app()
