@@ -6,6 +6,51 @@ import io
 import base64
 from fpdf import FPDF
 
+def create_class_list_pdf(arrangement_df, exam_date):
+    """Generates a PDF class list for signing."""
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    
+    rooms = sorted(arrangement_df['Room'].unique())
+    
+    for room in rooms:
+        pdf.add_page()
+        
+        # Set title
+        pdf.set_font('Arial', 'B', 16)
+        title_text = f"Class List for {room}"
+        pdf.cell(0, 10, title_text, 0, 1, 'C')
+        
+        exam_date_text = f"Exam Date: {exam_date.strftime('%A, %B %d, %Y')}"
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, exam_date_text, 0, 1, 'C')
+        pdf.ln(5)
+        
+        # Set table headers
+        pdf.set_font('Arial', 'B', 10)
+        col_widths = [25, 30, 60, 30, 40] # Column widths
+        headers = ['Seat Number', 'Index Number', 'Full Name', 'Class', 'Signature']
+        for i, header in enumerate(headers):
+            pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
+        pdf.ln()
+        
+        # Add table rows
+        pdf.set_font('Arial', '', 9)
+        room_df = arrangement_df[arrangement_df['Room'] == room].sort_values('Seat Number')
+        for _, row in room_df.iterrows():
+            pdf.cell(col_widths[0], 10, str(row['Seat Number']), 1)
+            pdf.cell(col_widths[1], 10, str(row['Index Number']), 1)
+            # Use multi_cell for names to wrap if they are too long
+            x_before_name = pdf.get_x()
+            y_before_name = pdf.get_y()
+            pdf.multi_cell(col_widths[2], 10, str(row['Full Name']), 1, 'L')
+            # Reset position to the next cell
+            pdf.set_xy(x_before_name + col_widths[2], y_before_name)
+            pdf.cell(col_widths[3], 10, str(row['Class']), 1)
+            pdf.cell(col_widths[4], 10, '', 1) # Empty signature cell
+            pdf.ln()
+            
+    return pdf.output(dest='S')
+
 def create_pdf(arrangement_df, exam_date):
     """Generates a PDF file from the arrangement dataframe."""
     pdf = FPDF(orientation='L', unit='mm', format='A4')
@@ -18,8 +63,8 @@ def create_pdf(arrangement_df, exam_date):
     
     # Set table headers
     pdf.set_font('Arial', 'B', 10)
-    col_widths = [40, 25, 40, 60, 40, 30] # Column widths
-    headers = ['Room', 'Seat Number', 'Index Number', 'Full Name', 'Subject', 'Session']
+    col_widths = [35, 20, 35, 55, 35, 30, 30] # Column widths
+    headers = ['Room', 'Seat Number', 'Index Number', 'Full Name', 'Class', 'Subject', 'Session']
     for i, header in enumerate(headers):
         pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
     pdf.ln()
@@ -32,8 +77,9 @@ def create_pdf(arrangement_df, exam_date):
         pdf.cell(col_widths[1], 10, str(row['Seat Number']), 1)
         pdf.cell(col_widths[2], 10, str(row['Index Number']), 1)
         pdf.cell(col_widths[3], 10, str(row['Full Name']), 1)
-        pdf.cell(col_widths[4], 10, str(row['Subject']), 1)
-        pdf.cell(col_widths[5], 10, str(row['Session']), 1)
+        pdf.cell(col_widths[4], 10, str(row['Class']), 1)
+        pdf.cell(col_widths[5], 10, str(row['Subject']), 1)
+        pdf.cell(col_widths[6], 10, str(row['Session']), 1)
         pdf.ln()
         
     return pdf.output(dest='S')
@@ -57,6 +103,7 @@ def generate_arrangement(df, room_capacities, subject_sessions, exam_date):
             student_subjects.append({
                 'IndexNumber': row['IndexNumber'],
                 'Full_Name': row['Full_Name'],
+                'Class': row['Class'],
                 'Subject': subject
             })
 
@@ -115,6 +162,7 @@ def generate_arrangement(df, room_capacities, subject_sessions, exam_date):
             'Seat Number': seat['Seat Number'],
             'Index Number': student['IndexNumber'],
             'Full Name': student['Full_Name'],
+            'Class': student['Class'],
             'Subject': student['Subject'],
             'Session': student['Session']
         })
@@ -128,14 +176,14 @@ def generate_arrangement(df, room_capacities, subject_sessions, exam_date):
 
     # Add title row with date
     title_text = f"Seating Arrangement for {exam_date.strftime('%A, %B %d, %Y')}"
-    ws.merge_cells('A1:F1')
+    ws.merge_cells('A1:G1')
     title_cell = ws['A1']
     title_cell.value = title_text
     title_cell.font = Font(bold=True, size=14)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Set headers in the second row
-    headers = ['Room', 'Seat Number', 'Index Number', 'Full Name', 'Subject', 'Session']
+    headers = ['Room', 'Seat Number', 'Index Number', 'Full Name', 'Class', 'Subject', 'Session']
     ws.append(headers)
     for cell in ws[2]:
         cell.font = Font(bold=True)
@@ -152,7 +200,8 @@ def generate_arrangement(df, room_capacities, subject_sessions, exam_date):
     ws.column_dimensions['C'].width = 20
     ws.column_dimensions['D'].width = 30
     ws.column_dimensions['E'].width = 20
-    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['F'].width = 20
+    ws.column_dimensions['G'].width = 15
 
     return wb, arrangement_df # Return dataframe for PDF generation
 
@@ -287,8 +336,14 @@ def run_app():
                             pdf_filename = f"seating_arrangement_{exam_date.strftime('%Y-%m-%d')}.pdf"
                             pdf_link = get_pdf_download_link(pdf_bytes, pdf_filename)
 
+                            # Class list PDF download link
+                            class_list_pdf_bytes = create_class_list_pdf(arrangement_df, exam_date)
+                            class_list_pdf_filename = f"class_list_{exam_date.strftime('%Y-%m-%d')}.pdf"
+                            class_list_pdf_link = get_pdf_download_link(class_list_pdf_bytes, class_list_pdf_filename)
+
                             st.markdown(excel_link, unsafe_allow_html=True)
                             st.markdown(pdf_link, unsafe_allow_html=True)
+                            st.markdown(class_list_pdf_link.replace("Download PDF file", "Download Class List PDF"), unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"An error occurred while processing the file: {e}")
