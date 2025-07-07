@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Network Devices</h1>
+        <table id="devices-table">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>MAC Address</th>
+                    <th>Device Name</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        function loadDevices() {
+            fetch('network_devices.json')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector('#devices-table tbody');
+                    tableBody.innerHTML = '';
+                    data.forEach(device => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${device.ip}</td>
+                            <td>${device.mac}</td>
+                            <td>${device.name}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                });
+        }
+        loadDevices();
+        setInterval(loadDevices, 5000);
+    </script>
+</body>
+</html>

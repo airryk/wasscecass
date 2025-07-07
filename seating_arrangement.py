@@ -56,7 +56,8 @@ def create_class_list_pdf(arrangement_df, exam_date):
                 pdf.cell(col_widths[5], 10, '', 1)
                 pdf.ln()
                 
-    return pdf.output(dest='S').encode('latin-1')
+    # Return the PDF output directly without encoding
+    return pdf.output(dest='S')
 
 def create_pdf(arrangement_df, exam_date):
     """Generates a PDF file from the arrangement dataframe for a specific date."""
@@ -92,7 +93,8 @@ def create_pdf(arrangement_df, exam_date):
             pdf.cell(col_widths[6], 10, str(row['Session']), 1)
             pdf.ln()
             
-    return pdf.output(dest='S').encode('latin-1')
+    # Return the PDF output directly without encoding
+    return pdf.output(dest='S')
 
 def generate_arrangement(df, room_capacities, subject_details):
     """Generates an Excel workbook with seating arrangements for multiple subjects in rooms."""
