@@ -8,6 +8,13 @@ from fpdf import FPDF
 from streamlit_sortables import sort_items
 import datetime
 
+# Try to import plotly, handle if not available
+try:
+    import plotly.express as px
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+
 class PDFWithPageNumber(FPDF):
     def footer(self):
         self.set_y(-15)
@@ -40,15 +47,15 @@ def create_class_list_pdf(arrangement_df, exam_date):
             
             pdf.set_font('Arial', 'B', 10)
             col_widths = [15, 25, 60, 25, 40, 30]
-            headers = ['Seat Number', 'Index Number', 'Full Name', 'Class', 'Subject', 'Signature']
+            headers = ['Seat No', 'Index Number', 'Full Name', 'Class', 'Subject', 'Signature']
             for i, header in enumerate(headers):
                 pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
             pdf.ln()
             
             pdf.set_font('Arial', '', 8)
-            room_df = session_df[session_df['Room'] == room].sort_values('Seat Number')
+            room_df = session_df[session_df['Room'] == room].sort_values('Seat No')
             for _, row in room_df.iterrows():
-                pdf.cell(col_widths[0], 10, str(row['Seat Number']), 1)
+                pdf.cell(col_widths[0], 10, str(row['Seat No']), 1)
                 pdf.cell(col_widths[1], 10, str(row['Index Number']), 1)
                 pdf.cell(col_widths[2], 10, str(row['Full Name']), 1)
                 pdf.cell(col_widths[3], 10, str(row['Class']), 1)
@@ -56,8 +63,9 @@ def create_class_list_pdf(arrangement_df, exam_date):
                 pdf.cell(col_widths[5], 10, '', 1)
                 pdf.ln()
                 
-    # Return the PDF output directly without encoding
-    return pdf.output(dest='S')
+    # Fix: Return bytes instead of string
+    pdf_output = pdf.output(dest='S')
+    return pdf_output.encode('latin-1') if isinstance(pdf_output, str) else pdf_output
 
 def create_pdf(arrangement_df, exam_date):
     """Generates a PDF file from the arrangement dataframe for a specific date."""
@@ -76,7 +84,7 @@ def create_pdf(arrangement_df, exam_date):
         
         pdf.set_font('Arial', 'B', 10)
         col_widths = [40, 20, 35, 65, 35, 40, 30]
-        headers = ['Room', 'Seat Number', 'Index Number', 'Full Name', 'Class', 'Subject', 'Session']
+        headers = ['Room', 'Seat No', 'Index Number', 'Full Name', 'Class', 'Subject', 'Session']
         for i, header in enumerate(headers):
             pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
         pdf.ln()
@@ -85,7 +93,7 @@ def create_pdf(arrangement_df, exam_date):
         session_df = date_df[date_df['Session'] == session]
         for _, row in session_df.iterrows():
             pdf.cell(col_widths[0], 10, str(row['Room']), 1)
-            pdf.cell(col_widths[1], 10, str(row['Seat Number']), 1)
+            pdf.cell(col_widths[1], 10, str(row['Seat No']), 1)
             pdf.cell(col_widths[2], 10, str(row['Index Number']), 1)
             pdf.cell(col_widths[3], 10, str(row['Full Name']), 1)
             pdf.cell(col_widths[4], 10, str(row['Class']), 1)
@@ -93,8 +101,154 @@ def create_pdf(arrangement_df, exam_date):
             pdf.cell(col_widths[6], 10, str(row['Session']), 1)
             pdf.ln()
             
-    # Return the PDF output directly without encoding
-    return pdf.output(dest='S')
+    # Fix: Return bytes instead of string
+    pdf_output = pdf.output(dest='S')
+    return pdf_output.encode('latin-1') if isinstance(pdf_output, str) else pdf_output
+
+def analyze_subject_registration(df):
+    """Analyze subject registration by gender and return statistics."""
+    if df is None or df.empty:
+        return None
+    
+    # Check if Gender column exists
+    if 'Gender' not in df.columns:
+        st.warning("Gender column not found in the data. Gender analysis will not be available.")
+        has_gender = False
+    else:
+        has_gender = True
+    
+    # Get all subjects from both core and elective columns
+    all_subjects = set()
+    
+    if 'Core_Subjects' in df.columns:
+        core_subjects = df['Core_Subjects'].str.split(',').explode().str.strip()
+        all_subjects.update(core_subjects.dropna().unique())
+    
+    if 'Elective_Subjects' in df.columns:
+        elective_subjects = df['Elective_Subjects'].str.split(',').explode().str.strip()
+        all_subjects.update(elective_subjects.dropna().unique())
+    
+    # Remove empty strings and NaN values
+    all_subjects = {s for s in all_subjects if s and s != 'nan' and str(s).strip()}
+    
+    if not all_subjects:
+        return None
+    
+    # Create analysis data
+    analysis_data = []
+    
+    for subject in sorted(all_subjects):
+        # Find students taking this subject
+        core_mask = df['Core_Subjects'].str.contains(subject, na=False, regex=False)
+        elective_mask = df['Elective_Subjects'].str.contains(subject, na=False, regex=False)
+        subject_students = df[core_mask | elective_mask]
+        
+        total_count = len(subject_students)
+        
+        if has_gender and total_count > 0:
+            # Count by gender
+            gender_counts = subject_students['Gender'].value_counts()
+            male_count = gender_counts.get('Male', 0) + gender_counts.get('M', 0) + gender_counts.get('male', 0)
+            female_count = gender_counts.get('Female', 0) + gender_counts.get('F', 0) + gender_counts.get('female', 0)
+            
+            analysis_data.append({
+                'Subject': subject,
+                'Male': male_count,
+                'Female': female_count,
+                'Total': total_count
+            })
+        else:
+            analysis_data.append({
+                'Subject': subject,
+                'Total': total_count
+            })
+    
+    return pd.DataFrame(analysis_data) if analysis_data else None
+
+def display_subject_analysis(df):
+    """Display subject analysis in the Streamlit app."""
+    st.subheader("📊 Subject Registration Analysis")
+    
+    analysis_df = analyze_subject_registration(df)
+    
+    if analysis_df is None or analysis_df.empty:
+        st.warning("No subject data available for analysis.")
+        return
+    
+    # Display the analysis table
+    if 'Male' in analysis_df.columns and 'Female' in analysis_df.columns:
+        st.dataframe(
+            analysis_df.style.format({
+                'Male': '{:,}',
+                'Female': '{:,}',
+                'Total': '{:,}'
+            }),
+            use_container_width=True
+        )
+        
+        # Create summary statistics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Subjects", len(analysis_df))
+        
+        with col2:
+            total_registrations = analysis_df['Total'].sum()
+            st.metric("Total Registrations", f"{total_registrations:,}")
+        
+        with col3:
+            total_male = analysis_df['Male'].sum()
+            st.metric("Total Male", f"{total_male:,}")
+        
+        with col4:
+            total_female = analysis_df['Female'].sum()
+            st.metric("Total Female", f"{total_female:,}")
+        
+        # Show gender distribution chart
+        if PLOTLY_AVAILABLE:
+            if st.checkbox("Show Gender Distribution Chart"):
+                # Create a chart showing gender distribution by subject
+                chart_data = analysis_df.melt(
+                    id_vars=['Subject'], 
+                    value_vars=['Male', 'Female'], 
+                    var_name='Gender', 
+                    value_name='Count'
+                )
+                
+                fig = px.bar(
+                    chart_data, 
+                    x='Subject', 
+                    y='Count', 
+                    color='Gender',
+                    title='Student Registration by Subject and Gender',
+                    color_discrete_map={'Male': '#1f77b4', 'Female': '#ff7f0e'}
+                )
+                fig.update_layout(xaxis_tickangle=45)
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("📊 Install plotly (`pip install plotly`) to enable interactive charts.")
+    
+    else:
+        # Display without gender breakdown
+        st.dataframe(
+            analysis_df.style.format({'Total': '{:,}'}),
+            use_container_width=True
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Total Subjects", len(analysis_df))
+        
+        with col2:
+            total_registrations = analysis_df['Total'].sum()
+            st.metric("Total Registrations", f"{total_registrations:,}")
+    
+    # Show top subjects
+    if len(analysis_df) > 0:
+        st.subheader("📈 Top 10 Most Popular Subjects")
+        top_subjects = analysis_df.nlargest(10, 'Total')[['Subject', 'Total']]
+        st.dataframe(top_subjects, use_container_width=True, hide_index=True)
 
 def generate_arrangement(df, room_capacities, subject_details):
     """Generates an Excel workbook with seating arrangements for multiple subjects in rooms."""
@@ -159,7 +313,7 @@ def generate_arrangement(df, room_capacities, subject_details):
             for room_name_key in room_capacities.keys():
                 capacity = room_capacities[room_name_key]
                 for seat_num in range(1, capacity + 1):
-                    all_seats.append({'Room': room_names[room_name_key], 'Seat Number': seat_num})
+                    all_seats.append({'Room': room_names[room_name_key], 'Seat No': seat_num})
 
             if len(session_df) > len(all_seats):
                 st.error(f"Not enough seats for the {session} session on {exam_date.strftime('%Y-%m-%d')} ({len(session_df)} required, {len(all_seats)} available).")
@@ -179,7 +333,7 @@ def generate_arrangement(df, room_capacities, subject_details):
                         seating_arrangement.append({
                             'Date': student['Date'],
                             'Room': seat['Room'],
-                            'Seat Number': seat['Seat Number'],
+                            'Seat No': seat['Seat No'],
                             'Index Number': student['IndexNumber'],
                             'Full Name': student['Full_Name'],
                             'Class': student['Class'],
@@ -233,7 +387,7 @@ def generate_arrangement(df, room_capacities, subject_details):
         title_cell.font = Font(bold=True, size=14)
         title_cell.alignment = Alignment(horizontal='center')
 
-        headers = ['Room', 'Seat Number', 'Index Number', 'Full Name', 'Class', 'Subject', 'Session']
+        headers = ['Room', 'Seat No', 'Index Number', 'Full Name', 'Class', 'Subject', 'Session']
         ws.append(headers)
         for cell in ws[2]:
             cell.font = Font(bold=True)
@@ -302,14 +456,22 @@ def run_app():
     uploaded_file = st.file_uploader(
         "Upload student data file (CSV or Excel)",
         type=["csv", "xlsx"],
-        help="The file must contain columns: IndexNumber, Full_Name, Class, Core_Subjects, Elective_Subjects"
+        help="The file must contain columns: IndexNumber, Full_Name, Class, Core_Subjects, Elective_Subjects. Optional: Gender column for gender analysis."
     )
 
     if uploaded_file:
         try:
             df = pd.read_excel(uploaded_file, dtype=str) if uploaded_file.name.endswith('.xlsx') else pd.read_csv(uploaded_file, dtype=str)
             st.success("File uploaded successfully!")
-            st.dataframe(df.head())
+            
+            # Create tabs for different views
+            tab1, tab2 = st.tabs(["📋 Data Preview", "📊 Subject Analysis"])
+            
+            with tab1:
+                st.dataframe(df.head())
+            
+            with tab2:
+                display_subject_analysis(df)
 
             st.header("Exam Configuration")
 
@@ -318,13 +480,53 @@ def run_app():
                 elective_subjects = df['Elective_Subjects'].str.split(',').explode().str.strip().astype(str).unique()
                 all_subjects = sorted(list(set(core_subjects) | set(elective_subjects)))
                 
+                # Remove empty strings and NaN values
+                all_subjects = [s for s in all_subjects if s and s != 'nan' and str(s).strip()]
+                
                 selected_subjects = st.multiselect("Select subjects for this exam session", options=all_subjects)
 
                 subject_details = {}
                 if selected_subjects:
                     st.subheader("Set Subject Dates and Sessions")
                     today = datetime.date.today()
+                    
+                    # Show selected subjects analysis
+                    if st.checkbox("Show analysis for selected subjects only"):
+                        selected_analysis = analyze_subject_registration(df)
+                        if selected_analysis is not None:
+                            selected_analysis = selected_analysis[selected_analysis['Subject'].isin(selected_subjects)]
+                            if not selected_analysis.empty:
+                                st.subheader("📊 Selected Subjects Analysis")
+                                if 'Male' in selected_analysis.columns and 'Female' in selected_analysis.columns:
+                                    st.dataframe(
+                                        selected_analysis.style.format({
+                                            'Male': '{:,}',
+                                            'Female': '{:,}',
+                                            'Total': '{:,}'
+                                        }),
+                                        use_container_width=True
+                                    )
+                                    
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.metric("Selected Subjects", len(selected_analysis))
+                                    with col2:
+                                        st.metric("Total Male Students", f"{selected_analysis['Male'].sum():,}")
+                                    with col3:
+                                        st.metric("Total Female Students", f"{selected_analysis['Female'].sum():,}")
+                                else:
+                                    st.dataframe(
+                                        selected_analysis.style.format({'Total': '{:,}'}),
+                                        use_container_width=True
+                                    )
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        st.metric("Selected Subjects", len(selected_analysis))
+                                    with col2:
+                                        st.metric("Total Students", f"{selected_analysis['Total'].sum():,}")
+                    
                     for subject in selected_subjects:
+                        st.write(f"**{subject}**")
                         cols = st.columns([0.5, 0.5])
                         date = cols[0].date_input("Date", value=today, key=f"date_{subject}")
                         session = cols[1].selectbox(f"Session for {subject}", ["Morning", "Afternoon", "Both"], key=f"session_{subject}")
@@ -415,3 +617,4 @@ def run_app():
 
 if __name__ == "__main__":
     run_app()
+
