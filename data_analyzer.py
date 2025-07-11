@@ -827,6 +827,17 @@ def run_app():
                                 st.info(f"Report includes only the filtered data ({len(filtered_df)} students).")
                             else:
                                 st.info(f"Report includes all data ({len(df)} students).")
+    
+    # Add footer with link to services
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style="text-align: center; padding: 10px;">
+            <p>For more educational tools and services, visit <a href="https://techmawu.com" target="_blank">techmawu.com</a></p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 def main():
     """Entry point when running this file directly"""

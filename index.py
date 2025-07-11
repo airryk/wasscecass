@@ -339,6 +339,17 @@ def run_app():
                 st.info(f"Additional sheets created for each programme: {', '.join(programmes)}")
                 st.info("Each student's data is displayed with their subjects and scores across 3 years.")
 
+    # Add footer with link to services
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style="text-align: center; padding: 10px;">
+            <p>For more educational tools and services, visit <a href="https://techmawu.com" target="_blank">techmawu.com</a></p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
 def create_template_file():
     """Creates a template Excel file with the required columns and example data."""
     wb = openpyxl.Workbook()

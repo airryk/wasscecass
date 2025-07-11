@@ -698,6 +698,21 @@ def run_app():
         except Exception as e:
             st.error(f"An error occurred while processing the file: {e}")
 
-if __name__ == "__main__":
+    # Add footer with link to services
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style="text-align: center; padding: 10px;">
+            <p>For more educational tools and services, visit <a href="https://techmawu.com" target="_blank">techmawu.com</a></p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
+def main():
+    """Entry point when running this file directly"""
+    st.set_page_config(page_title="Exam Seating Arrangement Generator", layout="wide")
     run_app()
 
+if __name__ == "__main__":
+    main()
