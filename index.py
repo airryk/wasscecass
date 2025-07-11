@@ -254,6 +254,20 @@ def run_app():
     st.title("Student Score Generator")
     st.write("Generate random scores for students across different years")
     
+    # Add template download section
+    st.subheader("Need a template?")
+    if st.button("Generate Template File"):
+        template_wb = create_template_file()
+        template_file = io.BytesIO()
+        template_wb.save(template_file)
+        template_file.seek(0)
+        
+        b64_template = base64.b64encode(template_file.read()).decode()
+        template_download_link = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_template}" download="student_score_generator_template.xlsx">Download Template Excel File</a>'
+        st.markdown(template_download_link, unsafe_allow_html=True)
+        st.info("Template file generated! Click the link above to download.")
+        st.markdown("---")
+    
     # Create tabs for different options
     tab1, tab2 = st.tabs(["Upload Data", "Generate New Data"])
     
@@ -324,6 +338,108 @@ def run_app():
                 st.success(f"Excel file generated with all {num_students} students on a single sheet.")
                 st.info(f"Additional sheets created for each programme: {', '.join(programmes)}")
                 st.info("Each student's data is displayed with their subjects and scores across 3 years.")
+
+def create_template_file():
+    """Creates a template Excel file with the required columns and example data."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    
+    # Define headers
+    headers = ["Class", "PROGRAMMES", "INDEX NUMBER", "NAME", "Sex", 
+               "C-SUBJECT 1", "C-SUBJECT 2", "C-SUBJECT 3", "C-SUBJECT 4",
+               "E-SUBJECT 1", "E-SUBJECT 2", "E-SUBJECT 3", "E-SUBJECT 4"]
+    
+    # Add headers to the first row
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Add example data
+    example_data = [
+        ["3A1", "GENERAL ARTS", "3041100001", "John Doe", "Male", 
+         "C-MATHS", "ENG", "SOC-STUD", "INT-SCI", 
+         "GOV", "ECONS", "LIT-ENG", "FANTE"],
+        
+        ["3A2", "SCIENCE", "3041100002", "Jane Smith", "Female", 
+         "C-MATHS", "ENG", "SOC-STUD", "INT-SCI", 
+         "PHYSICS", "CHEMISTRY", "BIOLOGY", "ECONS"],
+        
+        ["3S1", "BUSINESS", "3041100003", "Alex Johnson", "Male", 
+         "C-MATHS", "ENG", "SOC-STUD", "INT-SCI", 
+         "ECONS", "GOV", "GEOGRAPHY", "LIT-ENG"],
+        
+        ["3S2", "HOME ECONOMICS", "3041100004", "Sarah Williams", "Female", 
+         "C-MATHS", "ENG", "SOC-STUD", "INT-SCI", 
+         "FANTE", "CHEMISTRY", "BIOLOGY", "GEOGRAPHY"],
+        
+        ["3B1", "GENERAL ARTS", "3041100005", "Michael Brown", "Male", 
+         "C-MATHS", "ENG", "SOC-STUD", "INT-SCI", 
+         "GOV", "ECONS", "GEOGRAPHY", "LIT-ENG"]
+    ]
+    
+    # Add example data starting from row 2
+    for row_idx, row_data in enumerate(example_data, 2):
+        for col_idx, value in enumerate(row_data, 1):
+            ws.cell(row=row_idx, column=col_idx, value=value)
+    
+    # Add instructions in a new sheet
+    ws_instructions = wb.create_sheet(title="Instructions")
+    instructions = [
+        ["Instructions for filling the template:"],
+        [""],
+        ["1. Class: The class designation of the student (e.g., 3A1, 3S2)"],
+        ["2. PROGRAMMES: The programme the student is enrolled in (e.g., GENERAL ARTS, SCIENCE)"],
+        ["3. INDEX NUMBER: Unique identifier for each student (e.g., 3041100001)"],
+        ["4. NAME: Full name of the student"],
+        ["5. Sex: Gender of the student (Male/Female)"],
+        ["6. C-SUBJECT 1-4: Core subjects taken by the student"],
+        ["7. E-SUBJECT 1-4: Elective subjects taken by the student"],
+        [""],
+        ["Notes:"],
+        ["- Do not change the column headers"],
+        ["- All students should have 4 core subjects and 4 elective subjects"],
+        ["- Make sure subject names are consistent (e.g., 'C-MATHS' vs 'MATHS')"],
+        ["- You can add as many rows as needed for additional students"],
+        ["- Save the file as Excel (.xlsx) format before uploading"]
+    ]
+    
+    for row_idx, row_text in enumerate(instructions, 1):
+        ws_instructions.cell(row=row_idx, column=1, value=row_text[0])
+    
+    # Format the instructions
+    ws_instructions.column_dimensions['A'].width = 80
+    for i in range(1, len(instructions) + 1):
+        cell = ws_instructions.cell(row=i, column=1)
+        if i == 1:  # Title row
+            cell.font = Font(bold=True, size=14)
+        elif i > 2 and i <= 9:  # Column descriptions
+            cell.font = Font(bold=False)
+        elif i > 10:  # Notes
+            cell.font = Font(italic=True)
+    
+    # Set column widths in template sheet
+    column_widths = {
+        'A': 15,  # Class
+        'B': 20,  # PROGRAMMES
+        'C': 20,  # INDEX NUMBER
+        'D': 30,  # NAME
+        'E': 15,  # Sex
+        'F': 15,  # C-SUBJECT 1
+        'G': 15,  # C-SUBJECT 2
+        'H': 15,  # C-SUBJECT 3
+        'I': 15,  # C-SUBJECT 4
+        'J': 15,  # E-SUBJECT 1
+        'K': 15,  # E-SUBJECT 2
+        'L': 15,  # E-SUBJECT 3
+        'M': 15,  # E-SUBJECT 4
+    }
+    
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
+    
+    return wb
 
 if __name__ == "__main__":
     main()

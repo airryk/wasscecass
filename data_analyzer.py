@@ -632,10 +632,97 @@ def get_download_link(virtual_file, filename):
     b64 = base64.b64encode(virtual_file.read()).decode()
     return f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{filename}">Download Analysis Report</a>'
 
+def create_template_file():
+    """Creates a template Excel file with the required columns and example data."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    
+    # Define headers
+    headers = ["Student Code", "Programme", "Full Name", "Gender", 
+               "Date of Birth", "Basic Index No.", "Elective Subjects"]
+    ws.append(headers)
+    
+    # Format headers
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Add example data
+    example_data = [
+        ['001', 'Science', 'John Doe', 'Male', '2005-05-15', 'B001', 'Physics, Chemistry, Biology'],
+        ['002', 'Arts', 'Jane Smith', 'Female', '2004-08-22', 'B002', 'Literature, History, Geography'],
+        ['003', 'Science', 'Alex Johnson', 'Male', '2005-03-10', 'B003', 'Physics, Chemistry, Mathematics'],
+        ['004', 'Business', 'Sarah Williams', 'Female', '2004-11-30', 'B004', 'Economics, Accounting, Business Studies'],
+        ['005', 'Arts', 'Michael Brown', 'Male', '2005-01-25', 'B005', 'Literature, History, French']
+    ]
+    
+    for row in example_data:
+        ws.append(row)
+    
+    # Add instructions in a new sheet
+    ws_instructions = wb.create_sheet(title="Instructions")
+    instructions = [
+        ["Instructions for filling the template:"],
+        [""],
+        ["1. Student Code: Unique identifier for each student (required)"],
+        ["2. Programme: The programme or track the student is enrolled in (required)"],
+        ["3. Full Name: Complete name of the student (required)"],
+        ["4. Gender: Student's gender (required for gender analysis)"],
+        ["5. Date of Birth: Student's date of birth in YYYY-MM-DD format (required for age analysis)"],
+        ["6. Basic Index No.: Student's basic index number (required)"],
+        ["7. Elective Subjects: List of elective subjects separated by commas (required)"],
+        [""],
+        ["Notes:"],
+        ["- Do not change the column headers"],
+        ["- Make sure subject names are consistent (e.g., 'Mathematics' vs 'Math')"],
+        ["- Date of Birth should be in a format Excel recognizes as dates (YYYY-MM-DD recommended)"],
+        ["- You can add as many rows as needed"],
+        ["- Save the file as Excel (.xlsx) or CSV format before uploading"]
+    ]
+    
+    for row in instructions:
+        ws_instructions.append(row)
+    
+    # Format the instructions
+    ws_instructions.column_dimensions['A'].width = 80
+    for i, row in enumerate(ws_instructions.iter_rows(min_row=1, max_row=len(instructions)), 1):
+        if i == 1:  # Title row
+            row[0].font = Font(bold=True, size=14)
+        elif i > 2 and i <= 9:  # Column descriptions
+            row[0].font = Font(bold=False)
+        elif i > 10:  # Notes
+            row[0].font = Font(italic=True)
+    
+    # Set column widths in template sheet
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 30
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 15
+    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['G'].width = 40
+    
+    return wb
+
 def run_app():
     """Main application function without page config"""
     st.title("Student Data Analyzer")
     st.write("Upload your student data file for analysis")
+    
+    # Add template download section
+    st.subheader("Need a template?")
+    if st.button("Generate Template File"):
+        template_wb = create_template_file()
+        template_file = io.BytesIO()
+        template_wb.save(template_file)
+        template_file.seek(0)
+        
+        b64_template = base64.b64encode(template_file.read()).decode()
+        template_download_link = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_template}" download="student_data_analyzer_template.xlsx">Download Template Excel File</a>'
+        st.markdown(template_download_link, unsafe_allow_html=True)
+        st.info("Template file generated! Click the link above to download.")
+        st.markdown("---")
     
     uploaded_file = st.file_uploader("Choose an Excel or CSV file", type=["xlsx", "xls", "csv"])
     
