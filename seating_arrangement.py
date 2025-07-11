@@ -335,7 +335,7 @@ def generate_arrangement(df, room_capacities, subject_details):
                             'Room': seat['Room'],
                             'Seat No': seat['Seat No'],
                             'Index Number': student['IndexNumber'],
-                            'Full Name': student['Full_Name'],
+                            'Full Name': student['Full Name'],
                             'Class': student['Class'],
                             'Subject': student['Subject'],
                             'Session': student['Session']
@@ -449,10 +449,93 @@ def add_room_callback():
         st.session_state.new_room_input = ""
         sync_ordered_rooms()
 
+def create_template_file():
+    """Creates a template Excel file with the required columns and example data."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    
+    # Define headers
+    headers = ['IndexNumber', 'Full_Name', 'Class', 'Gender', 'Core_Subjects', 'Elective_Subjects']
+    ws.append(headers)
+    
+    # Format headers
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Add example data
+    example_data = [
+        ['001', 'John Doe', '3A', 'Male', 'Mathematics,English,Science', 'History,Geography'],
+        ['002', 'Jane Smith', '3A', 'Female', 'Mathematics,English,Science', 'French,Art'],
+        ['003', 'Alex Johnson', '3B', 'Male', 'Mathematics,English,Science', 'Computer Science,Physics'],
+        ['004', 'Sarah Williams', '3B', 'Female', 'Mathematics,English,Science', 'Chemistry,Biology'],
+        ['005', 'Michael Brown', '3C', 'Male', 'Mathematics,English,Science', 'Economics,Business Studies']
+    ]
+    
+    for row in example_data:
+        ws.append(row)
+    
+    # Add instructions in a new sheet
+    ws_instructions = wb.create_sheet(title="Instructions")
+    instructions = [
+        ["Instructions for filling the template:"],
+        [""],
+        ["1. IndexNumber: Unique identifier for each student (required)"],
+        ["2. Full_Name: Complete name of the student (required)"],
+        ["3. Class: The class or group the student belongs to (required)"],
+        ["4. Gender: Student's gender (optional, but useful for analysis)"],
+        ["5. Core_Subjects: List of core subjects separated by commas (required)"],
+        ["6. Elective_Subjects: List of elective subjects separated by commas (required)"],
+        [""],
+        ["Notes:"],
+        ["- Do not change the column headers"],
+        ["- Make sure subject names are consistent (e.g., 'Mathematics' vs 'Math')"],
+        ["- You can add as many rows as needed"],
+        ["- Save the file as Excel (.xlsx) or CSV format before uploading"]
+    ]
+    
+    for row in instructions:
+        ws_instructions.append(row)
+    
+    # Format the instructions
+    ws_instructions.column_dimensions['A'].width = 80
+    for i, row in enumerate(ws_instructions.iter_rows(min_row=1, max_row=len(instructions)), 1):
+        if i == 1:  # Title row
+            row[0].font = Font(bold=True, size=14)
+        elif i > 2 and i <= 8:  # Column descriptions
+            row[0].font = Font(bold=False)
+        elif i > 9:  # Notes
+            row[0].font = Font(italic=True)
+    
+    # Set column widths in template sheet
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 40
+    ws.column_dimensions['F'].width = 40
+    
+    return wb
+
 def run_app():
     st.title("Exam Seating Arrangement Generator")
     st.write("Upload a file with student data to generate a seating arrangement for exams based on subjects.")
-
+    
+    # Add template download section
+    st.subheader("Need a template?")
+    if st.button("Generate Template File"):
+        template_wb = create_template_file()
+        template_file = io.BytesIO()
+        template_wb.save(template_file)
+        template_file.seek(0)
+        
+        b64_template = base64.b64encode(template_file.read()).decode()
+        template_download_link = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_template}" download="seating_arrangement_template.xlsx">Download Template Excel File</a>'
+        st.markdown(template_download_link, unsafe_allow_html=True)
+        st.info("Template file generated! Click the link above to download.")
+        st.markdown("---")
+    
     uploaded_file = st.file_uploader(
         "Upload student data file (CSV or Excel)",
         type=["csv", "xlsx"],
