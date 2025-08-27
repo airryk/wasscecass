@@ -300,7 +300,9 @@ def generate_arrangement(df, room_capacities, subject_details):
 
     arrangement_df = pd.DataFrame()
     
-    unique_dates = sorted(long_df['Date'].unique())
+    # Filter out any NaN dates and ensure consistent types
+    valid_dates = [d for d in long_df['Date'].unique() if pd.notna(d)]
+    unique_dates = sorted(valid_dates)
 
     for exam_date in unique_dates:
         date_df = long_df[long_df['Date'] == exam_date]
@@ -380,7 +382,9 @@ def generate_arrangement(df, room_capacities, subject_details):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
 
-    for exam_date in sorted(arrangement_df['Date'].unique()):
+    # Filter out NaN dates and sort
+    valid_exam_dates = [d for d in arrangement_df['Date'].unique() if pd.notna(d)]
+    for exam_date in sorted(valid_exam_dates):
         ws = wb.create_sheet(title=exam_date.strftime('%Y-%m-%d'))
         
         title_text = f"Seating Arrangement for {exam_date.strftime('%A, %B %d, %Y')}"
@@ -444,7 +448,9 @@ def sync_ordered_rooms():
 
 def add_room_callback():
     new_room = st.session_state.get("new_room_input", "").strip()
-    if new_room and new_room not in st.session_state.all_classes:
+    if new_room and new_room not in st.session_state.get('all_classes', []):
+        if 'all_classes' not in st.session_state:
+            st.session_state.all_classes = []
         st.session_state.all_classes.append(new_room)
         st.session_state.all_classes.sort()
         if 'selected_rooms' in st.session_state:
@@ -564,10 +570,10 @@ def run_app():
             if 'Core_Subjects' in df.columns and 'Elective_Subjects' in df.columns:
                 core_subjects = df['Core_Subjects'].str.split(',').explode().str.strip().astype(str).unique()
                 elective_subjects = df['Elective_Subjects'].str.split(',').explode().str.strip().astype(str).unique()
-                all_subjects = sorted(list(set(core_subjects) | set(elective_subjects)))
-                
-                # Remove empty strings and NaN values
-                all_subjects = [s for s in all_subjects if s and s != 'nan' and str(s).strip()]
+                # Remove empty strings and NaN values before sorting
+                all_subjects_set = set(core_subjects) | set(elective_subjects)
+                all_subjects_clean = [s for s in all_subjects_set if s and s != 'nan' and str(s).strip() and pd.notna(s)]
+                all_subjects = sorted(all_subjects_clean)
                 
                 selected_subjects = st.multiselect("Select subjects for this exam session", options=all_subjects)
 
@@ -624,7 +630,9 @@ def run_app():
             if 'Class' in df.columns:
                 if 'current_file' not in st.session_state or st.session_state.current_file != uploaded_file.name:
                     st.session_state.current_file = uploaded_file.name
-                    all_classes = sorted(df['Class'].unique())
+                    # Filter out NaN values before sorting
+                    valid_classes = [c for c in df['Class'].unique() if pd.notna(c) and str(c).strip()]
+                    all_classes = sorted(valid_classes)
                     st.session_state.all_classes = all_classes
                     st.session_state.ordered_rooms = all_classes.copy()
                     st.session_state.selected_rooms = all_classes.copy()
@@ -682,7 +690,9 @@ def run_app():
 
                             st.subheader("Download PDFs by Date")
                             if arrangement_df is not None and not arrangement_df.empty:
-                                for exam_date in sorted(arrangement_df['Date'].unique()):
+                                # Filter out NaN dates and sort
+                                valid_pdf_dates = [d for d in arrangement_df['Date'].unique() if pd.notna(d)]
+                                for exam_date in sorted(valid_pdf_dates):
                                     st.write(f"**Downloads for {exam_date.strftime('%A, %B %d, %Y')}:**")
 
                                     subjects_on_date = arrangement_df[arrangement_df['Date'] == exam_date]['Subject'].unique()
