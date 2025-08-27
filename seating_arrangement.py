@@ -138,9 +138,9 @@ def analyze_subject_registration(df):
     analysis_data = []
     
     for subject in sorted(all_subjects):
-        # Find students taking this subject
-        core_mask = df['Core_Subjects'].str.contains(subject, na=False, regex=False)
-        elective_mask = df['Elective_Subjects'].str.contains(subject, na=False, regex=False)
+        # Find students taking this subject (exact match)
+        core_mask = df['Core_Subjects'].str.split(',').apply(lambda x: subject in [s.strip() for s in x] if isinstance(x, list) else False)
+        elective_mask = df['Elective_Subjects'].str.split(',').apply(lambda x: subject in [s.strip() for s in x] if isinstance(x, list) else False)
         subject_students = df[core_mask | elective_mask]
         
         total_count = len(subject_students)
@@ -151,11 +151,14 @@ def analyze_subject_registration(df):
             male_count = gender_counts.get('Male', 0) + gender_counts.get('M', 0) + gender_counts.get('male', 0)
             female_count = gender_counts.get('Female', 0) + gender_counts.get('F', 0) + gender_counts.get('female', 0)
             
+            # Make total match the sum of male and female counts
+            total_with_gender = male_count + female_count
+            
             analysis_data.append({
                 'Subject': subject,
                 'Male': male_count,
                 'Female': female_count,
-                'Total': total_count
+                'Total': total_with_gender
             })
         else:
             analysis_data.append({
