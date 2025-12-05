@@ -1,0 +1,342 @@
+<!DOCTYPE html><html class=" js flexbox flexboxlegacy canvas canvastext webgl no-touch geolocation postmessage no-websqldatabase indexeddb hashchange history draganddrop websockets rgba hsla multiplebgs backgroundsize borderimage borderradius boxshadow textshadow opacity cssanimations csscolumns cssgradients cssreflections csstransforms csstransforms3d csstransitions fontface generatedcontent video audio localstorage sessionstorage webworkers no-applicationcache svg inlinesvg smil svgclippaths" style=""><head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Student Page - Student Cass Portal</title>
+	<link href="/Content/css?v=VPMHdbssvRE-6S28XB6pdOXXCus3r5mTAqLR3VeWeNM1" rel="stylesheet">
+
+	<script src="/bundles/modernizr?v=wBEWDufH_8Md-Pbioxomt90vm6tJN2Pyy9u9zHtWsPo1"></script>
+
+</head>
+<body style="">
+    
+
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <!-- Application Name / Brand -->
+        <a class="navbar-brand" href="/Student/Index">Student Registration Portal</a>
+
+        <!-- Toggle button for responsive navbar -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <!-- Link to Student Controller -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/Student/Index">Students</a>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownEntry" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Enrollment
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li>
+                                <a class="dropdown-item" href="/Student/New">Add Student</a>
+                            </li>
+
+                        <li>
+                            <a class="dropdown-item" href="/Student/CassScoreEntry">Enter Cass</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownReport" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Reports
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <li>
+                            <a class="dropdown-item" href="/Student/EntryReport">Entry Report</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Student/DuplicateEntry">Duplicate Entry Report</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Student/PhotoAlbumReport">Photo Album</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Student/SubjectDetails">Subjects Details</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        School Admin
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li>
+                                <a class="dropdown-item" href="/Account/UserIndex">Users</a>
+                            </li>
+                                                <li>
+                            <a class="dropdown-item" href="javascript:document.getElementById('logoutForm').submit();">
+                                Log Out
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
+
+<form action="/Account/Logout" id="logoutForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="_usS-qSo5C6Rlh8t4xcP8g2cl6_GbdPbU4ShkR0oE_Sw4InhMMBP5AyxmgvwuCR-Fbkh08JnGD0G500BT1Rg1DMb_CQmH3DEvlUFeuWsTNY1"></form></nav>
+
+
+    <header class="site-header">
+        <div class="container">
+            <div>
+                <h3>WEST AFRICAN SENIOR SCHOOL CERTIFICATE EXAMINATION, SC - 2026</h3>
+            </div>
+            <hr>
+            <div>
+                <p class="school-name">MOZANO SENIOR HIGH/COMM. SCHOOL</p>
+            </div>
+        </div>
+        
+    </header>
+
+    <hr class="mt-0 mb-3" style="border-top: 2px solid #ccc;">
+
+    <div class="container body-content">
+        
+
+
+<h2>Student Entry</h2>
+
+
+<form action="/Student/Save" enctype="multipart/form-data" id="studentForm" method="post" novalidate="novalidate"><input name="__RequestVerificationToken" type="hidden" value="fqopLTXEJ2WWZk9UKfLBu1H623szlT0NHZDnMOtdMnhMnTujSSq6be5xAYmGqoCkOuMBhASZWkk9I5_3tv5XS_CwwChXEbKYyrK6p6_cPvc1"><input id="submitType" name="submitType" type="hidden" value="Final"><input data-val="true" data-val-number="The field StudentId must be a number." data-val-required="The StudentId field is required." id="StudentId" name="StudentId" type="hidden" value="0"><input id="StudentCode" name="StudentCode" type="hidden" value="">    <!-- Student Basic Details -->
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="form-group mb-3">
+            <label class="control-label" for="Surname">Surname</label>
+            <input class="form-control" data-val="true" data-val-length="The field Surname must be a string with a maximum length of 40." data-val-length-max="40" data-val-required="Surname is required." id="Surname" name="Surname" type="text" value="ANTWI">
+            <span class="field-validation-valid text-danger" data-valmsg-for="Surname" data-valmsg-replace="true"></span>
+        </div>
+        <div class="form-group mb-3">
+            <label class="control-label" for="MiddleName">Middle Name</label>
+            <input class="form-control" data-val="true" data-val-length="The field Middle Name must be a string with a maximum length of 40." data-val-length-max="40" id="MiddleName" name="MiddleName" type="text" value="">
+            <span class="field-validation-valid text-danger" data-valmsg-for="MiddleName" data-valmsg-replace="true"></span>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="form-group mb-3">
+            <label class="control-label" for="FirstName">First Name</label>
+            <input class="form-control" data-val="true" data-val-length="The field First Name must be a string with a maximum length of 40." data-val-length-max="40" data-val-required="First Name is required." id="FirstName" name="FirstName" type="text" value="BENEDICTA">
+            <span class="field-validation-valid text-danger" data-valmsg-for="FirstName" data-valmsg-replace="true"></span>
+        </div>
+    </div>
+
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="control-label" for="DateOfBirth">Date of Birth</label>
+        <input class="form-control" data-val="true" data-val-required="The Date of Birth field is required." id="DateOfBirth" name="DateOfBirth" placeholder="dd/mm/yyyy" type="text" value="30/11/2008" inputmode="text">
+        <span class="field-validation-valid text-danger" data-valmsg-for="DateOfBirth" data-valmsg-replace="true"></span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label class="control-label" for="Gender">Gender</label>
+
+        <div class="form-check">
+            <input class="form-check-input" data-val="true" data-val-regex="Please select a valid gender." data-val-regex-pattern="^[12]$" data-val-required="Please select a gender." id="genderMale" name="Gender" type="radio" value="1">
+            <label class="form-check-label" for="genderMale">Male</label>
+        </div>
+        <div class="form-check">
+            <input checked="checked" class="form-check-input" id="genderFemale" name="Gender" type="radio" value="2">
+            <label class="form-check-label" for="genderFemale">Female</label>
+        </div>
+
+        <span class="field-validation-valid text-danger" data-valmsg-for="Gender" data-valmsg-replace="true"></span>
+    </div>
+</div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="control-label" for="BasicSchoolIndexNumber">Basic School IndexNumber</label>
+            <input class="form-control" data-val="true" data-val-regex="Index Number must be a valid 10-digit number." data-val-regex-pattern="^\d{10}$" id="BasicSchoolIndexNumber" name="BasicSchoolIndexNumber" type="text" value="0423002035">
+            <span class="field-validation-valid text-danger" data-valmsg-for="BasicSchoolIndexNumber" data-valmsg-replace="true"></span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="control-label" for="BasicSchoolYear">Basic School Completion Year</label>
+            <input class="form-control" data-val="true" data-val-regex="Year must be a valid 4-digit number." data-val-regex-pattern="^\d{4}$" id="BasicSchoolYear" name="BasicSchoolYear" type="text" value="2023">
+
+            <span class="field-validation-valid text-danger" data-valmsg-for="BasicSchoolYear" data-valmsg-replace="true"></span>
+        </div>
+    </div>
+        <div class="form-group mb-3">
+            <label class="control-label" for="ProgrammeCode">Programme</label>
+            <select class="form-control" id="ProgrammeCode" name="ProgrammeCode" onchange="document.getElementById('submitType').value='Reload'; this.form.submit();"><option value="">-- Select Programme --</option>
+<option value="101">Agriculture</option>
+<option value="201">Business (Accounting option)</option>
+<option value="202">Business (Secretarial option)</option>
+<option value="301">Technical</option>
+<option selected="selected" value="401">Home Economics</option>
+<option value="402">Visual Arts</option>
+<option value="501">General Arts</option>
+<option value="502">General Science</option>
+</select>
+            <span class="field-validation-valid text-danger" data-valmsg-for="ProgrammeCode" data-valmsg-replace="true"></span>
+
+            <input class="form-check-input" data-val="true" data-val-required="The SaveAsTemplate field is required." id="SaveAsTemplate" name="SaveAsTemplate" type="checkbox" value="true"><input name="SaveAsTemplate" type="hidden" value="false">
+            <label class="form-check-label" for="SaveAsTemplate">Save selected subjects template</label>
+        </div>
+
+<div class="row">
+    <div class="col-md-6">
+        <dl class="row">
+            <dt class="col-sm-4">Core Subjects:</dt>
+            <dd class="col-sm-8">
+                <div class="text-muted small">
+                    SOCIAL STUDIES, ENGLISH LANG, MATHEMATICS(CORE), INTEGRATED SCIENCE
+                </div>
+            </dd>
+
+        </dl>
+    </div>
+</div>
+
+        <fieldset>
+            <legend>Core Subjects</legend>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_0__Subjects_0__SubjectCode" name="SubjectGroups[0].Subjects[0].SubjectCode" type="hidden" value="704">
+
+                        <!-- Render a checkbox that is checked and disabled -->
+                        <input type="checkbox" class="form-check-input" checked="checked" disabled="disabled">
+                        <!-- Hidden field to submit the value -->
+<input value="true" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_0__Subjects_0__IsSelected" name="SubjectGroups[0].Subjects[0].IsSelected" type="hidden">
+                    <label class="form-check-label" for="SubjectGroups_0__Subjects_0__IsSelected">MGT IN LIVING</label>
+                </div>
+        </fieldset>
+        <fieldset>
+            <legend>Elective Options 1</legend>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_1__Subjects_0__SubjectCode" name="SubjectGroups[1].Subjects[0].SubjectCode" type="hidden" value="701">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_1__Subjects_0__IsSelected" name="SubjectGroups[1].Subjects[0].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[1].Subjects[0].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_1__Subjects_0__IsSelected">CLOTHING &amp; TEXTILES</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_1__Subjects_1__SubjectCode" name="SubjectGroups[1].Subjects[1].SubjectCode" type="hidden" value="702">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_1__Subjects_1__IsSelected" name="SubjectGroups[1].Subjects[1].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[1].Subjects[1].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_1__Subjects_1__IsSelected">FOODS &amp; NUTRITION</label>
+                </div>
+        </fieldset>
+        <fieldset>
+            <legend>Elective Options 2</legend>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_2__Subjects_0__SubjectCode" name="SubjectGroups[2].Subjects[0].SubjectCode" type="hidden" value="203">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_2__Subjects_0__IsSelected" name="SubjectGroups[2].Subjects[0].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[2].Subjects[0].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_2__Subjects_0__IsSelected">ECONOMICS</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_2__Subjects_1__SubjectCode" name="SubjectGroups[2].Subjects[1].SubjectCode" type="hidden" value="304">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_2__Subjects_1__IsSelected" name="SubjectGroups[2].Subjects[1].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[2].Subjects[1].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_2__Subjects_1__IsSelected">FRENCH</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_2__Subjects_2__SubjectCode" name="SubjectGroups[2].Subjects[2].SubjectCode" type="hidden" value="705">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_2__Subjects_2__IsSelected" name="SubjectGroups[2].Subjects[2].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[2].Subjects[2].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_2__Subjects_2__IsSelected">MUSIC</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_2__Subjects_3__SubjectCode" name="SubjectGroups[2].Subjects[3].SubjectCode" type="hidden" value="709">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_2__Subjects_3__IsSelected" name="SubjectGroups[2].Subjects[3].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[2].Subjects[3].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_2__Subjects_3__IsSelected">GEN KNOW IN ART</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_2__Subjects_4__SubjectCode" name="SubjectGroups[2].Subjects[4].SubjectCode" type="hidden" value="715">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_2__Subjects_4__IsSelected" name="SubjectGroups[2].Subjects[4].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[2].Subjects[4].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_2__Subjects_4__IsSelected">TEXTILES</label>
+                </div>
+        </fieldset>
+        <fieldset>
+            <legend>Elective Options 3</legend>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_3__Subjects_0__SubjectCode" name="SubjectGroups[3].Subjects[0].SubjectCode" type="hidden" value="401">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_3__Subjects_0__IsSelected" name="SubjectGroups[3].Subjects[0].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[3].Subjects[0].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_3__Subjects_0__IsSelected">MATHEMATICS(ELECT)</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_3__Subjects_1__SubjectCode" name="SubjectGroups[3].Subjects[1].SubjectCode" type="hidden" value="504">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_3__Subjects_1__IsSelected" name="SubjectGroups[3].Subjects[1].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[3].Subjects[1].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_3__Subjects_1__IsSelected">BIOLOGY</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_3__Subjects_2__SubjectCode" name="SubjectGroups[3].Subjects[2].SubjectCode" type="hidden" value="505">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_3__Subjects_2__IsSelected" name="SubjectGroups[3].Subjects[2].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[3].Subjects[2].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_3__Subjects_2__IsSelected">CHEMISTRY</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_3__Subjects_3__SubjectCode" name="SubjectGroups[3].Subjects[3].SubjectCode" type="hidden" value="512">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_3__Subjects_3__IsSelected" name="SubjectGroups[3].Subjects[3].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[3].Subjects[3].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_3__Subjects_3__IsSelected">PHYSICS</label>
+                </div>
+                <div class="form-check">
+                    
+                    <input id="SubjectGroups_3__Subjects_4__SubjectCode" name="SubjectGroups[3].Subjects[4].SubjectCode" type="hidden" value="623">
+
+<input class="form-check-input" data-val="true" data-val-required="The IsSelected field is required." id="SubjectGroups_3__Subjects_4__IsSelected" name="SubjectGroups[3].Subjects[4].IsSelected" type="checkbox" value="true"><input name="SubjectGroups[3].Subjects[4].IsSelected" type="hidden" value="false">
+                    <label class="form-check-label" for="SubjectGroups_3__Subjects_4__IsSelected">ICT (ELECT)</label>
+                </div>
+        </fieldset>
+    <!-- Form Buttons -->
+    <div class="form-group mb-3">
+        <input id="StudentId" name="StudentId" type="hidden" value="0">
+        <input type="submit" value="Save Student" class="btn btn-primary me-2" onclick="document.getElementById('submitType').value='Final';">
+        <a class="btn btn-secondary" href="/Student/Index">Cancel</a>
+    </div>
+</form>
+        <hr>
+        <footer>
+            <p>© 2025 - UBT</p>
+        </footer>
+    </div>
+
+    <script src="/bundles/jquery?v=FVs3ACwOLIVInrAl5sdzR2jrCDmVOWFbZMY6g6Q0ulE1"></script>
+
+    <script src="/bundles/bootstrap?v=2Fz3B0iizV2NnnamQFrx-NbYJNTFeBJ2GM05SilbtQU1"></script>
+
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
+        <script src="/Scripts/student-form.js"></script>
+
+        <script src="/bundles/jqueryval?v=hEGG8cMxk9p0ncdRUOJ-CnKN7NezhnPnWIvn6REucZo1"></script>
+
+
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+</body></html>

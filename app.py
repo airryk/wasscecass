@@ -7,6 +7,7 @@ import streamlit as st
 import index
 import data_analyzer
 import seating_arrangement
+import seating_arrangement
 
 def main():
     st.title("WASSCE Student Data Tools")
@@ -25,6 +26,7 @@ def main():
     elif page == "Seating Arrangement":
         # Run the seating arrangement tool
         seating_arrangement.run_app()
+
     else:
         # Run the data analyzer without its set_page_config
         data_analyzer.run_app()

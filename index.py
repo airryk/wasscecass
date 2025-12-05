@@ -7,7 +7,6 @@ import streamlit as st
 import io
 import base64
 from openpyxl.utils import get_column_letter
-
 def generate_student_data(num_students=20):
     """Generate random student data"""
     classes = ["3A1", "3A2", "3S1", "3S2", "3B1"]

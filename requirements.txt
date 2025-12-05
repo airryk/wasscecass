@@ -9,3 +9,5 @@ altair
 streamlit-sortables
 scapy
 psutil
+playwright
+python-dotenv
