@@ -317,14 +317,52 @@ def run_automation():
                                     logger.info("  --------------------------------")
                                     
                                     # --- SELECT SUBJECTS ---
-                                    # Check both 'Subject 1' and 'SUBJECT 1' (case variations)
+                                    # Step 1: Collect desired subjects from Excel
                                     subject_cols = []
                                     for i in range(1, 5):
                                         if f"Subject {i}" in row.index:
                                             subject_cols.append(f"Subject {i}")
                                         elif f"SUBJECT {i}" in row.index:
                                             subject_cols.append(f"SUBJECT {i}")
-
+                                    
+                                    desired_subjects = []
+                                    for sub_col in subject_cols:
+                                        subject_name = str(row.get(sub_col, "")).strip()
+                                        if subject_name:
+                                            desired_subjects.append(subject_name.lower())
+                                    
+                                    logger.info(f"  Desired subjects from Excel: {desired_subjects}")
+                                    
+                                    # Step 2: Uncheck all pre-selected checkboxes (except hidden/disabled ones)
+                                    logger.info("  Unchecking all pre-selected subjects...")
+                                    all_checkboxes = page.locator("input[type='checkbox']").all()
+                                    for cb in all_checkboxes:
+                                        try:
+                                            # Skip disabled or hidden checkboxes
+                                            if cb.is_disabled():
+                                                continue
+                                            if not cb.is_visible():
+                                                continue
+                                            
+                                            # Uncheck if currently checked
+                                            if cb.is_checked():
+                                                cb_id = cb.get_attribute("id") or ""
+                                                cb_name = cb.get_attribute("name") or ""
+                                                
+                                                # Get label text for logging
+                                                label_text = ""
+                                                if cb_id:
+                                                    label_elem = page.locator(f"label[for='{cb_id}']")
+                                                    if label_elem.count() > 0:
+                                                        label_text = label_elem.first.text_content().strip()
+                                                
+                                                cb.uncheck()
+                                                logger.info(f"    Unchecked: '{label_text}' (ID: {cb_id})")
+                                        except Exception as uncheck_err:
+                                            logger.warning(f"    Could not uncheck checkbox: {uncheck_err}")
+                                    
+                                    # Step 3: Check only the desired subjects from Excel
+                                    logger.info("  Selecting desired subjects...")
                                     for sub_col in subject_cols:
                                         subject_name = str(row.get(sub_col, "")).strip()
                                         if subject_name:
@@ -345,10 +383,13 @@ def run_automation():
                                                     if for_id:
                                                         checkbox = page.locator(f"#{for_id}")
                                                         
-                                                        # Check if it's a hidden input (pre-selected core subject)
+                                                        # Check if it's a hidden input (pre-selected core subject that can't be changed)
                                                         input_type = checkbox.get_attribute("type")
                                                         if input_type == "hidden":
-                                                            logger.info(f"    Subject '{subject_name}' is a pre-selected core subject. Skipping.")
+                                                            logger.info(f"    Subject '{subject_name}' is a mandatory core subject (hidden). Skipping.")
+                                                            selected = True
+                                                        elif checkbox.is_disabled():
+                                                            logger.info(f"    Subject '{subject_name}' is disabled/locked. Skipping.")
                                                             selected = True
                                                         elif checkbox.is_checked():
                                                             logger.info(f"    Subject '{subject_name}' is already selected. Skipping.")
@@ -360,9 +401,14 @@ def run_automation():
                                                     else:
                                                         # If no 'for' attribute, maybe input is nested inside label?
                                                         if target_label.locator("input[type='checkbox']").count() > 0:
-                                                            target_label.locator("input[type='checkbox']").first.check()
-                                                            selected = True
-                                                            logger.info(f"    Selected via nested checkbox.")
+                                                            nested_cb = target_label.locator("input[type='checkbox']").first
+                                                            if not nested_cb.is_disabled():
+                                                                nested_cb.check()
+                                                                selected = True
+                                                                logger.info(f"    Selected via nested checkbox.")
+                                                            else:
+                                                                logger.info(f"    Nested checkbox is disabled. Skipping.")
+                                                                selected = True
                                                         else:
                                                             # Fallback: Click label, but warn it might toggle
                                                             logger.warning(f"    No 'for' ID found for '{subject_name}'. Clicking label (might toggle).")
@@ -371,10 +417,16 @@ def run_automation():
                                                 
                                                 # Strategy 2: Input Value Match
                                                 if not selected:
-                                                    if page.locator(f"input[value='{subject_name}']").count() > 0:
-                                                        page.locator(f"input[value='{subject_name}']").check()
-                                                        selected = True
-                                                        logger.info(f"    Selected via Input Value match.")
+                                                    value_selector = f"input[value='{subject_name}']"
+                                                    if page.locator(value_selector).count() > 0:
+                                                        value_cb = page.locator(value_selector).first
+                                                        if not value_cb.is_disabled():
+                                                            value_cb.check()
+                                                            selected = True
+                                                            logger.info(f"    Selected via Input Value match.")
+                                                        else:
+                                                            logger.info(f"    Input value match found but disabled. Skipping.")
+                                                            selected = True
                                                 
                                                 if not selected:
                                                     logger.warning(f"    FAILED to find selector for subject '{subject_name}'. Verify spelling!")
