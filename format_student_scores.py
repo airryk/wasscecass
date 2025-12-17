@@ -128,26 +128,27 @@ def create_formatted_excel(students_data, output_path):
         # Determine row fill color (alternate between students)
         row_fill = light_fill if student_index % 2 == 0 else alt_fill
         
-        # Create student details text
-        student_details = f"{student['name']}\nClass: \nProgramme: {student['programme']}\nIndex No: {admission_no}"
-        
-        # Merge cells for student details column
-        start_row = current_row
-        end_row = current_row + num_subjects - 1
-        
-        if num_subjects > 1:
-            ws.merge_cells(start_row=start_row, start_column=1, end_row=end_row, end_column=1)
-        
-        # Write student details in the merged cell
-        details_cell = ws.cell(row=start_row, column=1, value=student_details)
-        details_cell.alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
-        details_cell.border = thin_border
-        details_cell.fill = row_fill
+        # Student details to display on separate rows
+        student_detail_lines = [
+            student['name'],
+            f"Class: ",
+            f"Programme: {student['programme']}",
+            f"Index No: {admission_no}"
+        ]
         
         # Write each subject row
         for i, subject in enumerate(subjects):
             row = current_row + i
             scores = student['subjects'][subject]
+            
+            # Student Details column - put each detail on its own row
+            if i < len(student_detail_lines):
+                detail_cell = ws.cell(row=row, column=1, value=student_detail_lines[i])
+            else:
+                detail_cell = ws.cell(row=row, column=1, value='')
+            detail_cell.alignment = left_alignment
+            detail_cell.border = thin_border
+            detail_cell.fill = row_fill
             
             # S/N
             sn_cell = ws.cell(row=row, column=2, value=i + 1)
@@ -178,13 +179,13 @@ def create_formatted_excel(students_data, output_path):
             y3_cell.alignment = cell_alignment
             y3_cell.border = thin_border
             y3_cell.fill = row_fill
-            
-            # Apply border to student details column for non-merged rows
-            if i > 0:
-                ws.cell(row=row, column=1).border = thin_border
-                ws.cell(row=row, column=1).fill = row_fill
         
-        current_row = end_row + 1
+        # Move to next row after all subjects
+        current_row = current_row + num_subjects
+        
+        # Add empty row between students
+        current_row += 1
+        
         student_index += 1
     
     # Freeze the header row
