@@ -182,6 +182,52 @@ def names_match(name1, name2, threshold=0.85):
     
     return overlap >= threshold
 
+
+def normalize_subject(subject_name):
+    """Normalize subject names so small wording/abbreviation differences can match."""
+    if not subject_name:
+        return ""
+
+    value = subject_name.lower().strip()
+    value = re.sub(r"[^a-z0-9\s]", " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+
+    token_map = {
+        "math": "mathematics",
+        "maths": "mathematics",
+        "rel": "religious",
+        "stud": "studies",
+        "econ": "economics",
+        "econs": "economics",
+        "sci": "science",
+    }
+
+    tokens = [token_map.get(tok, tok) for tok in value.split()]
+    return " ".join(tokens)
+
+
+def subjects_match(subject1, subject2, threshold=0.67):
+    """Return True when two subject names are likely the same subject."""
+    norm1 = normalize_subject(subject1)
+    norm2 = normalize_subject(subject2)
+    if not norm1 or not norm2:
+        return False
+
+    if norm1 == norm2:
+        return True
+
+    tokens1 = set(norm1.split())
+    tokens2 = set(norm2.split())
+    if not tokens1 or not tokens2:
+        return False
+
+    if tokens1.issubset(tokens2) or tokens2.issubset(tokens1):
+        return True
+
+    common = tokens1.intersection(tokens2)
+    overlap = len(common) / max(len(tokens1), len(tokens2))
+    return overlap >= threshold and len(common) >= 2
+
 def find_student_by_name(students_data, target_name):
     """
     Search for a student in the Excel data by name.
@@ -348,7 +394,7 @@ def run_automation():
         time.sleep(2)
         
         processed_count = 0
-        skipped_count = 0
+        skipped_already_filled_count = 0
         max_iterations = len(students) + 50  # Safety limit
         
         for iteration in range(max_iterations):
@@ -433,28 +479,36 @@ def run_automation():
                 else:
                     logger.info(f"  Matched to Excel record: {matched_student.get('raw_name', 'Unknown')}")
                 
-                # CHECK IF SCORES ARE ALREADY FILLED (skip if already done)
+                # CHECK IF YEAR 3 IS ALREADY FILLED (skip only if truly done)
                 try:
                     already_filled = False
-                    # Check the first few score input fields to see if they have non-zero values
-                    score_inputs = page.locator("input[type='text'], input[type='number']")
-                    input_count = score_inputs.count()
-                    
-                    filled_count = 0
-                    for i in range(min(input_count, 6)):  # Check first 6 inputs
+                    year3_inputs_checked = 0
+                    year3_filled_count = 0
+
+                    # Inspect subject rows and only evaluate the Year 3 input (3rd score column).
+                    all_rows = page.locator("tr").all()
+                    for row in all_rows:
                         try:
-                            val = score_inputs.nth(i).input_value()
-                            # Check if value is filled (not empty, not "000", not "0")
-                            if val and val.strip() and val.strip() not in ["", "000", "0", "00"]:
-                                filled_count += 1
+                            inputs = row.locator("input[type='text'], input[type='number']")
+                            count = inputs.count()
+
+                            # Subject rows on CASS typically have three score inputs: Y1, Y2, Y3
+                            if count >= 3:
+                                year3_inputs_checked += 1
+                                val = inputs.nth(2).input_value()
+                                if val and val.strip() and val.strip() not in ["", "000", "0", "00"]:
+                                    year3_filled_count += 1
                         except:
                             pass
-                    
-                    # If more than half of checked inputs are filled, consider it already done
-                    if filled_count >= 3:
+
+                    # Skip only when all visible Year 3 fields are already filled.
+                    if year3_inputs_checked > 0 and year3_filled_count == year3_inputs_checked:
                         already_filled = True
-                        logger.info(f"  SKIPPING: Student '{full_name_text}' already has scores filled ({filled_count} fields have values)")
-                        skipped_count += 1
+                        logger.info(
+                            f"  SKIPPING: Student '{full_name_text}' already has Year 3 scores filled "
+                            f"({year3_filled_count}/{year3_inputs_checked} fields have values)"
+                        )
+                        skipped_already_filled_count += 1
                         
                         # Navigate to next student
                         if page.locator("text=NEW CASS FORM").count() > 0:
@@ -508,7 +562,7 @@ def run_automation():
                 else:
                     # EXCEL MATCH - Fill scores from matched student data
                     # First, get list of subjects we have data for
-                    excel_subjects = set()
+                    excel_subjects = []
                     for subj in matched_student.get("subjects", []):
                         s_name = subj["name"]
                         y1 = subj.get("y1", "")
@@ -516,7 +570,7 @@ def run_automation():
                         y3 = subj.get("y3", "")
                         
                         if not s_name: continue
-                        excel_subjects.add(s_name.lower().strip())
+                        excel_subjects.append(s_name)
                         
                         logger.info(f"    Subject: {s_name} | Y1: {y1}, Y2: {y2}, Y3: {y3}")
                         
@@ -531,21 +585,50 @@ def run_automation():
                             if subject_el.count() > 0:
                                 # Find the ROW (tr) that contains this subject
                                 row = subject_el.locator("xpath=./ancestor::tr")
+                            else:
+                                # Fallback: iterate all table rows and match by normalized tokens.
+                                row = None
+                                all_rows = page.locator("tr").all()
+                                for candidate_row in all_rows:
+                                    try:
+                                        if not candidate_row.locator("input[type='text'], input[type='number']").count():
+                                            continue
+
+                                        cells = candidate_row.locator("td").all()
+                                        if not cells:
+                                            continue
+
+                                        row_subject = ""
+                                        for cell in cells:
+                                            cell_text = cell.inner_text().strip()
+                                            if cell_text and any(ch.isalpha() for ch in cell_text):
+                                                row_subject = cell_text
+                                                break
+
+                                        if row_subject and subjects_match(s_name, row_subject):
+                                            row = candidate_row
+                                            break
+                                    except:
+                                        continue
                                 
-                                if row.count() > 0:
+                            if row and row.count() > 0:
                                     inputs = row.locator("input[type='text'], input[type='number']")
                                     count = inputs.count()
                                     
-                                    # Fill Year 1, Year 2 (and Year 3 if exists)
+                                    # Fill only empty/default fields so existing Year 1/2 values stay untouched.
                                     if count >= 1 and y1:
-                                        inputs.nth(0).fill(y1)
+                                        current_val = inputs.nth(0).input_value()
+                                        if not current_val or current_val.strip() in ["", "000", "0", "00"]:
+                                            inputs.nth(0).fill(y1)
                                     if count >= 2 and y2:
-                                        inputs.nth(1).fill(y2)
+                                        current_val = inputs.nth(1).input_value()
+                                        if not current_val or current_val.strip() in ["", "000", "0", "00"]:
+                                            inputs.nth(1).fill(y2)
                                     if count >= 3 and y3:
-                                        inputs.nth(2).fill(y3)
+                                        current_val = inputs.nth(2).input_value()
+                                        if not current_val or current_val.strip() in ["", "000", "0", "00"]:
+                                            inputs.nth(2).fill(y3)
                                         
-                                else:
-                                    logger.warning(f"    Could not find row for {s_name}")
                             else:
                                 logger.warning(f"    Subject label '{s_name}' not found on page.")
                                 
@@ -580,10 +663,8 @@ def run_automation():
                                 if not row_subject:
                                     continue
                                 
-                                # Check if this subject is in our Excel data
-                                row_subject_lower = row_subject.lower().strip()
-                                subject_in_excel = any(excel_subj in row_subject_lower or row_subject_lower in excel_subj 
-                                                      for excel_subj in excel_subjects)
+                                # Check if this subject is in our Excel data (with normalization/aliases).
+                                subject_in_excel = any(subjects_match(excel_subj, row_subject) for excel_subj in excel_subjects)
                                 
                                 if not subject_in_excel:
                                     # This subject is NOT in Excel - fill with random scores
@@ -638,25 +719,45 @@ def run_automation():
                 logger.info(f"  Successfully processed: {student_name_for_log}")
                 
                 # NAVIGATE TO NEXT STUDENT
-                # Look for "NEW CASS FORM" button for navigation
+                # After saving, explicitly click "NEW CASS FORM" to move to next student.
                 next_found = False
-                next_selectors = [
-                    "text=NEW CASS FORM",
-                    "button:has-text('NEW CASS FORM')",
-                    "a:has-text('NEW CASS FORM')",
-                    "text=New Cass Form",
-                    ".btn:has-text('NEW')",
-                ]
-                for sel in next_selectors:
+                try:
+                    page.wait_for_load_state("networkidle", timeout=7000)
+                except Exception:
+                    pass
+
+                # Primary path: role-based exact button name.
+                try:
+                    next_btn = page.get_by_role("button", name=re.compile(r"^\s*NEW\s+CASS\s+FORM\s*$", re.IGNORECASE)).first
+                    next_btn.wait_for(state="visible", timeout=5000)
+                    next_btn.click()
+                    next_found = True
+                except Exception:
+                    pass
+
+                # Fallback selectors if role-based button is not available.
+                if not next_found:
+                    next_selectors = [
+                        "button:has-text('NEW CASS FORM')",
+                        "a:has-text('NEW CASS FORM')",
+                        "text=NEW CASS FORM",
+                        "text=New Cass Form",
+                    ]
+                    for sel in next_selectors:
+                        try:
+                            if page.locator(sel).count() > 0 and page.locator(sel).first.is_visible():
+                                page.locator(sel).first.click()
+                                next_found = True
+                                break
+                        except:
+                            continue
+
+                if next_found:
                     try:
-                        if page.locator(sel).count() > 0:
-                            page.locator(sel).first.click()
-                            next_found = True
-                            time.sleep(2)
-                            page.wait_for_load_state("networkidle")
-                            break
-                    except:
-                        continue
+                        time.sleep(2)
+                        page.wait_for_load_state("networkidle")
+                    except Exception:
+                        pass
                 
                 if not next_found:
                     logger.info("  No 'NEW CASS FORM' button found. This may be the last student.")
@@ -668,8 +769,15 @@ def run_automation():
                         page.wait_for_load_state("networkidle")
                         time.sleep(2)
                     else:
-                        # Check if we're still on the same student (end of list)
-                        break
+                        # Follow the prompt behavior: refresh and continue trying next student.
+                        try:
+                            page.reload()
+                            page.wait_for_load_state("networkidle")
+                            time.sleep(2)
+                            continue
+                        except Exception as e:
+                            logger.warning(f"  Refresh failed after missing next button: {e}")
+                            break
 
             except Exception as e:
                 logger.error(f"  Error in iteration {iteration + 1}: {e}")
@@ -680,7 +788,7 @@ def run_automation():
         print("\n" + "="*40)
         logger.info(f"Processing completed!")
         logger.info(f"  Processed: {processed_count} students")
-        logger.info(f"  Skipped (no match): {skipped_count} students")
+        logger.info(f"  Skipped (already Year 3 filled): {skipped_already_filled_count} students")
         input("Press Enter to close the browser and exit script...")
         browser.close() 
 

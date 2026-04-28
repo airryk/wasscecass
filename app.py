@@ -1,15 +1,16 @@
-import streamlit as st
+import sys
 
-# Set page config at the very beginning - this must be the first Streamlit command
-# st.set_page_config(page_title="WASSCE Student Data Tools", layout="wide")
 
-# Import other modules after setting the page config
-import index
-import data_analyzer
-import seating_arrangement
-import seating_arrangement
+def _is_running_via_streamlit():
+    """Return True when this script is executed by Streamlit."""
+    return "streamlit" in sys.modules
 
 def main():
+    import streamlit as st
+    import index
+    import data_analyzer
+    import seating_arrangement
+
     st.title("WASSCE Student Data Tools")
     
     # Create a sidebar for navigation
@@ -32,4 +33,7 @@ def main():
         data_analyzer.run_app()
 
 if __name__ == "__main__":
-    main()
+    if not _is_running_via_streamlit():
+        print("This is a Streamlit app. Run it with: python -m streamlit run app.py")
+    else:
+        main()
