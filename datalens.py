@@ -133,6 +133,47 @@ def _dedupe_headers(cols):
     return out
 
 
+def _coerce_csv_types(df):
+    """pd.read_csv(dtype=str) reads every cell as text -- necessary because
+    unlike Excel, CSV carries no per-cell type metadata, so pandas' normal
+    auto-detection will happily convert a whole column like "0030407" to the
+    number 30407, permanently losing the leading zeros. This converts each
+    column back to numeric/boolean/datetime, but ONLY where doing so is safe
+    for every value in that column -- a column with even one leading-zero
+    numeric-looking value (an ID, a phone number) is left as text."""
+    out = df.copy()
+    for col in out.columns:
+        s = out[col]
+        non_null = s[s.notna()]
+        non_null = non_null[non_null.str.strip() != ""]
+        if non_null.empty:
+            continue
+        stripped = non_null.str.strip()
+
+        if stripped.str.match(r"^0\d+$").any():
+            continue  # a pure digit string starting with 0, e.g. "0030407",
+            # "0244123456" -- keep as text. Anchored so a date like
+            # "01/15/2024" (has separators) doesn't get caught here too.
+
+        numeric = pd.to_numeric(stripped, errors="coerce")
+        if numeric.notna().all():
+            out[col] = pd.to_numeric(s, errors="coerce")
+            continue
+
+        lowered = stripped.str.lower()
+        if lowered.isin(["true", "false"]).all():
+            out[col] = s.str.strip().str.lower().map({"true": True, "false": False})
+            continue
+
+        try:
+            parsed = pd.to_datetime(stripped, errors="raise")
+            if parsed.notna().all():
+                out[col] = pd.to_datetime(s, errors="coerce")
+        except (ValueError, TypeError):
+            pass
+    return out
+
+
 def load_dataframe(uploaded_file, key_prefix):
     """Read an uploaded file into a DataFrame, with a sheet picker for Excel
     files with more than one sheet. Returns None (and shows an error) on
@@ -148,7 +189,8 @@ def load_dataframe(uploaded_file, key_prefix):
                 )
             df = xls.parse(sheet_name)
         elif name.lower().endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
+            df = pd.read_csv(uploaded_file, dtype=str)
+            df = _coerce_csv_types(df)
         else:
             st.error("Unsupported file type. Please upload .xlsx, .xls, or .csv.")
             return None
