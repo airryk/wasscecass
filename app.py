@@ -10,16 +10,17 @@ def main():
     import index
     import data_analyzer
     import seating_arrangement
+    import datalens
 
     st.title("WASSCE Student Data Tools")
-    
+
     # Create a sidebar for navigation
     st.sidebar.title("Navigation")
     page = st.sidebar.radio(
         "Select a tool:",
-        ["Student Score Generator", "Student Data Analyzer", "Seating Arrangement"]
+        ["Student Score Generator", "Student Data Analyzer", "Seating Arrangement", "DataLens (Any File)"]
     )
-    
+
     # Display the selected page
     if page == "Student Score Generator":
         # Run the score generator without its set_page_config
@@ -27,7 +28,9 @@ def main():
     elif page == "Seating Arrangement":
         # Run the seating arrangement tool
         seating_arrangement.run_app()
-
+    elif page == "DataLens (Any File)":
+        # Run the generic spreadsheet analyzer / compare / merge tool
+        datalens.run_app()
     else:
         # Run the data analyzer without its set_page_config
         data_analyzer.run_app()
