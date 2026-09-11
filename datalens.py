@@ -781,6 +781,19 @@ def run_app():
 
     st.success(f"Loaded {len(df):,} rows × {len(df.columns)} columns from **{uploaded.name}**")
 
+    with st.expander("🔍 Debug: raw column types (temporary, remove once the zero-padding bug is found)"):
+        debug_col = st.selectbox("Column to inspect", list(df.columns), key="debug_col")
+        debug_series = df[debug_col]
+        st.write(f"pandas dtype: `{debug_series.dtype}`")
+        m = meta.get(debug_col, {})
+        st.write(f"classify_columns type: `{m.get('type')}` · pad_width: `{m.get('pad_width')}`")
+        sample = debug_series.dropna().head(15)
+        st.write("Raw values and their Python types (first 15 non-null rows):")
+        st.table(pd.DataFrame({
+            "repr(value)": [repr(v) for v in sample],
+            "python type": [type(v).__name__ for v in sample],
+        }))
+
     render_stats(df, meta)
     st.divider()
 
