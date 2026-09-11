@@ -11,7 +11,8 @@ env/
 venv/
 .venv/
 ENV/
-
+school_metrics_report.xlsx
+SCHOOL_ENROLLMENT_DATA_MAS.xlsx
 # IDE
 .vscode/
 .idea/
