@@ -87,12 +87,15 @@ def filled_mask(df):
     return mask
 
 
-def normalize_key(v):
+def normalize_key(v, pad_width=0):
     if is_blank(v):
         return ""
     if isinstance(v, pd.Timestamp):
         return v.strftime("%d/%m/%Y")
     if isinstance(v, (int, float, np.integer, np.floating)):
+        padded = pad_recovered(v, pad_width)
+        if padded is not None:
+            return padded
         f = float(v)
         return str(int(f)) if f.is_integer() else str(f)
     s = str(v).strip().upper()
@@ -175,8 +178,20 @@ def classify_columns(df):
         filled = int(mask.sum())
         values = s[mask]
 
+        # If a column mixes text cells like "0030407" with true-number cells
+        # for the same field (a common Excel data-entry inconsistency), the
+        # numeric cells lose their leading zeros. pad_width records the widest
+        # all-digit *text* value seen in this column, so display/export/match
+        # logic can zero-pad any stray numeric cell back to that width.
+        pad_width = 0
+        for v in values:
+            if isinstance(v, str):
+                t_stripped = v.strip()
+                if t_stripped.isdigit() and len(t_stripped) > pad_width:
+                    pad_width = len(t_stripped)
+
         if filled == 0:
-            meta[col] = {"type": "empty", "filled": 0, "total": n}
+            meta[col] = {"type": "empty", "filled": 0, "total": n, "pad_width": 0}
             continue
 
         if pd.api.types.is_bool_dtype(s):
@@ -188,7 +203,7 @@ def classify_columns(df):
         else:
             t = "text"
 
-        info = {"type": t, "filled": filled, "total": n}
+        info = {"type": t, "filled": filled, "total": n, "pad_width": pad_width}
 
         if t == "number":
             nums = pd.to_numeric(values, errors="coerce").dropna()
@@ -227,13 +242,44 @@ def pick_kpi_columns(meta, limit=4):
     return numeric_cols[:limit]
 
 
+def pad_recovered(v, pad_width):
+    """If v is a non-negative whole number shorter than pad_width, return it
+    zero-padded back to that width (recovering a leading zero Excel dropped
+    when it stored a sibling cell as a number instead of text). Returns None
+    when no padding applies."""
+    if not pad_width or isinstance(v, bool) or not isinstance(v, (int, float, np.integer, np.floating)):
+        return None
+    f = float(v)
+    if not f.is_integer() or f < 0:
+        return None
+    digits = str(int(f))
+    return digits.zfill(pad_width) if len(digits) < pad_width else None
+
+
 def to_display_df(df, meta):
     """Uppercase text columns for display; leave numeric/date/boolean columns
-    in their native dtype so Streamlit renders them natively."""
+    in their native dtype so Streamlit renders them natively. Any numeric
+    stray in a column that also holds zero-padded text values (e.g. a mixed
+    ID/phone column) is recovered back to the observed width."""
     disp = df.copy()
     for col, info in meta.items():
+        pad_width = info.get("pad_width", 0)
         if info.get("type") == "text":
-            disp[col] = disp[col].apply(lambda v: "" if is_blank(v) else str(v).strip().upper())
+            def _fmt_text(v, pad_width=pad_width):
+                if is_blank(v):
+                    return ""
+                padded = pad_recovered(v, pad_width)
+                if padded is not None:
+                    return padded
+                return str(v).strip().upper()
+            disp[col] = disp[col].apply(_fmt_text)
+        elif pad_width:
+            def _fmt_num(v, pad_width=pad_width):
+                if is_blank(v):
+                    return v
+                padded = pad_recovered(v, pad_width)
+                return padded if padded is not None else v
+            disp[col] = disp[col].apply(_fmt_num)
     disp.columns = [str(c).upper() for c in disp.columns]
     return disp
 
@@ -347,8 +393,18 @@ def render_explorer(df, meta, key_prefix):
             key=f"{key_prefix}_agg", disabled=(measure == "Number of records"),
         )
 
+    group_pad_width = meta[group_col].get("pad_width", 0)
+
+    def _group_key(v):
+        if is_blank(v):
+            return "(BLANK)"
+        padded = pad_recovered(v, group_pad_width)
+        if padded is not None:
+            return padded
+        return str(v).strip().upper()
+
     work = df.copy()
-    work["_group"] = work[group_col].apply(lambda v: "(BLANK)" if is_blank(v) else str(v).strip().upper())
+    work["_group"] = work[group_col].apply(_group_key)
 
     if measure == "Number of records":
         result = work.groupby("_group").size().sort_values(ascending=False)
@@ -407,7 +463,19 @@ def render_low_data(df, meta, key_prefix):
 # Compare & merge
 # ---------------------------------------------------------------------------
 
+def looks_like_id_column(name):
+    nm = name.strip()
+    if re.search(r"ID$", nm):  # camelCase/ALLCAPS suffix, e.g. SubscriberID (case-sensitive)
+        return True
+    if re.search(r"(^|[^a-zA-Z])id$", nm, re.I):  # standalone "id" word, e.g. "School Id", "ID"
+        return True
+    return False
+
+
 def guess_key_column(meta):
+    for c in meta:
+        if looks_like_id_column(c):
+            return c
     for c in meta:
         if re.search(r"name", c, re.I):
             return c
@@ -417,14 +485,14 @@ def guess_key_column(meta):
     return next(iter(meta))
 
 
-def resolve_duplicates(df, key_col):
+def resolve_duplicates(df, key_col, key_pad_width=0):
     """Group rows by normalized key. Groups with more than one row are
     collapsed into a single row: the most-complete row is kept as the base,
     and any of its blank fields are filled in from the other rows in the
     group. Returns (resolved_df indexed by key, list of dup-group summaries,
     dataframe of the raw duplicate rows)."""
     work = df.copy()
-    work["_key"] = work[key_col].apply(normalize_key)
+    work["_key"] = work[key_col].apply(lambda v: normalize_key(v, key_pad_width))
     work = work[work["_key"] != ""]
     work["_filled_count"] = filled_mask(df.loc[work.index]).sum(axis=1)
 
@@ -484,8 +552,8 @@ def render_compare_and_merge(df_a, meta_a, name_a, key_prefix="cmp"):
             index=list(df_b.columns).index(default_key_b), key=f"{key_prefix}_key_b",
         )
 
-    resolved_a, dup_a, dup_rows_a = resolve_duplicates(df_a, key_a)
-    resolved_b, dup_b, dup_rows_b = resolve_duplicates(df_b, key_b)
+    resolved_a, dup_a, dup_rows_a = resolve_duplicates(df_a, key_a, meta_a[key_a].get("pad_width", 0))
+    resolved_b, dup_b, dup_rows_b = resolve_duplicates(df_b, key_b, meta_b[key_b].get("pad_width", 0))
 
     keys_a, keys_b = set(resolved_a.index), set(resolved_b.index)
     matched = keys_a & keys_b

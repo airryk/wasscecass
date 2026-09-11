@@ -13,6 +13,8 @@ venv/
 ENV/
 school_metrics_report.xlsx
 SCHOOL_ENROLLMENT_DATA_MAS.xlsx
+allschools.xlsx
+access_schema.sql
 # IDE
 .vscode/
 .idea/
