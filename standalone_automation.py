@@ -23,8 +23,8 @@ PASSWORD = os.getenv("PORTAL_PASSWORD")  # Ensure .env has PORTAL_PASSWORD=your_
 EXCEL_FILE_PATH = "student_data.xlsx" 
 
 # URLs
-PORTAL_LOGIN_URL = "https://cass.waecinternetsolution.org/"
-FORM_PAGE_URL = "https://cass.waecinternetsolution.org/Student/New"
+PORTAL_LOGIN_URL = os.getenv("PORTAL_LOGIN_URL")  # Ensure .env has PORTAL_LOGIN_URL=...
+FORM_PAGE_URL = os.getenv("FORM_PAGE_URL")  # Ensure .env has FORM_PAGE_URL=...
 
 # ------------------------------------------
 # SELECTORS (Update these with real values)
