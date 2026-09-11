@@ -133,13 +133,15 @@ def _dedupe_headers(cols):
     return out
 
 
-def _coerce_csv_types(df):
-    """pd.read_csv(dtype=str) reads every cell as text -- necessary because
-    unlike Excel, CSV carries no per-cell type metadata, so pandas' normal
-    auto-detection will happily convert a whole column like "0030407" to the
-    number 30407, permanently losing the leading zeros. This converts each
-    column back to numeric/boolean/datetime, but ONLY where doing so is safe
-    for every value in that column -- a column with even one leading-zero
+def _coerce_text_types(df):
+    """Both read_csv(dtype=str) and read_excel(dtype=str) read every cell as
+    text -- forced deliberately, because pandas' own automatic type
+    inference (for CSV, and it turns out also for Excel via openpyxl) will
+    happily convert a whole column like "0030407" to the number 30407,
+    permanently losing the leading zeros, even when the source file stores
+    those cells as text. This converts each column back to
+    numeric/boolean/datetime, but ONLY where doing so is safe for every
+    value in that column -- a column with even one leading-zero
     numeric-looking value (an ID, a phone number) is left as text."""
     out = df.copy()
     for col in out.columns:
@@ -187,10 +189,11 @@ def load_dataframe(uploaded_file, key_prefix):
                 sheet_name = st.selectbox(
                     "Sheet", xls.sheet_names, key=f"{key_prefix}_sheet"
                 )
-            df = xls.parse(sheet_name)
+            df = xls.parse(sheet_name, dtype=str)
+            df = _coerce_text_types(df)
         elif name.lower().endswith(".csv"):
             df = pd.read_csv(uploaded_file, dtype=str)
-            df = _coerce_csv_types(df)
+            df = _coerce_text_types(df)
         else:
             st.error("Unsupported file type. Please upload .xlsx, .xls, or .csv.")
             return None
